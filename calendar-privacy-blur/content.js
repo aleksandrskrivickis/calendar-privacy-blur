@@ -3,11 +3,11 @@
  *
  * This is the whole content script. It injects nothing and reads nothing from
  * the page; it just tells the service worker "a calendar document is live
- * here, sync it". That covers the two cases chrome.tabs.onUpdated misses:
- *
- *   1. The extension is installed, updated, or re-enabled while a calendar tab
- *      is already open.
- *   2. Outlook is a single-page app — moving from Mail to Calendar, or between
+* here, sync it". That covers SPA navigations that chrome.tabs.onUpdated can miss:
+*
+*   Outlook is a single-page app — moving from Mail to Calendar, or between
+*   calendar views, can swap the whole surface without a tab-level update.
+*
  *      calendar views, can swap the whole surface without a tab-level update.
  *
  * The service worker owns the actual insertCSS/removeCSS decision, so this file
