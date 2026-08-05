@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Calendar Privacy Blur — selector fixture</title>
+
+    <!-- The real stylesheet, loaded exactly as shipped. -->
+    <link rel="stylesheet" href="../calendar-privacy-blur/hide-events.css" />
+
+    <style>
+      body { font: 13px system-ui, sans-serif; margin: 20px; color: #1b1c1e; }
+      h2 { font-size: 13px; margin: 18px 0 6px; }
+      [role="button"], [role="option"] { display: inline-block; padding: 4px 8px;
+        border: 1px solid #ccd; border-radius: 4px; margin: 2px; color: #123; }
+      .chip { background: #dfe6ff; }
+      table.report { border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+      .report td, .report th { border: 1px solid #ccd; padding: 3px 8px; text-align: left; }
+      .pass { color: #0a7a3d; font-weight: 600; }
+      .fail { color: #c02626; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <h1 style="font-size: 15px">Selector fixture</h1>
+    <p>
+      Reproduces the ARIA structure Calendar Privacy Blur depends on, so the
+      scoped selector in <code>hide-events.css</code> can be checked against a
+      real browser engine without an Outlook account. Re-run this after any
+      selector change — see “Known limitations” in the extension README.
+    </p>
+
+    <!-- ============ app chrome: must NEVER be masked ============ -->
+
+    <div role="banner">
+      <div role="button" aria-label="App launcher" id="chrome-launcher">Apps</div>
+      <div role="search"><div role="button" aria-label="Search" id="chrome-search">Search</div></div>
+    </div>
+
+    <div role="toolbar">
+      <div role="button" aria-label="Create new event" id="chrome-new">New event</div>
+      <div role="button" aria-label="Previous week" id="chrome-prev">&lt;</div>
+      <div role="button" aria-label="Next week" id="chrome-next">&gt;</div>
+    </div>
+
+    <div role="tablist">
+      <div role="button" aria-label="Day view" id="chrome-day">Day</div>
+      <div role="button" aria-label="Week view" id="chrome-week">Week</div>
+    </div>
+
+    <!-- Left rail. The mini date picker is itself a grid, which is exactly why
+         the scope requires [role="main"] and the guard excludes navigation. -->
+    <div role="navigation">
+      <div role="grid">
+        <div role="row">
+          <div role="gridcell">
+            <div role="button" aria-label="August 5, 2026" id="chrome-minidate">5</div>
+          </div>
+        </div>
+      </div>
+      <div role="tree">
+        <div role="button" aria-label="Calendar — Personal" id="chrome-calname">Personal</div>
+      </div>
+    </div>
+
+    <!-- ============ calendar surface: must be masked ============ -->
+
+    <main role="main">
+      <div role="grid">
+        <div role="row">
+          <div role="columnheader">
+            <div role="button" aria-label="Wednesday, August 5" id="grid-colheader">Wed 5</div>
+          </div>
+        </div>
+        <div role="row">
+          <div role="rowheader">
+            <div role="button" aria-label="8 AM" id="grid-rowheader">8 AM</div>
+          </div>
+          <div role="gridcell">
+            <div
+              class="chip"
+              role="button"
+              aria-label="Quarterly budget review, 9:00 AM to 10:00 AM, Recurring"
+              id="event-chip"
+            >
+              <span id="event-title">Quarterly budget review</span>
+              <span id="event-time">9:00 AM</span>
+              <i id="event-icon" data-icon-name="Recurring">&#8635;</i>
+              <svg id="event-svg" width="10" height="10" viewBox="0 0 10 10">
+                <circle id="event-svg-circle" cx="5" cy="5" r="4" fill="currentColor" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Agenda / list view -->
+      <div role="listbox">
+        <div role="option" aria-label="1:1 with Sam, 2:00 PM" id="agenda-option">
+          <span id="agenda-title">1:1 with Sam</span>
+        </div>
+      </div>
+
+      <!-- Dialog on top of the calendar: left alone deliberately. -->
+      <div role="dialog">
+        <div role="button" aria-label="Save" id="dialog-save">Save</div>
+      </div>
+    </main>
+
+    <!-- Outlook's own container hook, independent of the ARIA scope. -->
+    <div data-app-section="CalendarSurfaceContainer">
+      <div role="button" aria-label="Dentist, 4:00 PM" id="appsection-chip">
+        <span id="appsection-title">Dentist</span>
+      </div>
+    </div>
+
+    <table class="report" id="report">
+      <thead>
+        <tr><th>Element</th><th>Expected</th><th>Actual</th><th>Result</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script src="selector-fixture.js"></script>
+  </body>
+</html>
