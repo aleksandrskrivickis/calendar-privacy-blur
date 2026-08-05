@@ -2,7 +2,7 @@
 
 Masks the text of calendar events on Outlook Web so your meeting titles stay
 private while you share your screen. Icons stay visible, layout stays intact,
-and one click in the toolbar popup turns it off again.
+and one click on the toolbar icon turns it off again.
 
 Unofficial and not affiliated with Microsoft. "Outlook" appears here only to
 describe which site the extension works on.
