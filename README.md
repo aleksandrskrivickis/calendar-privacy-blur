@@ -1,1 +1,1 @@
-# outlook-calendar-privacy-blur
+# calendar-privacy-blur
