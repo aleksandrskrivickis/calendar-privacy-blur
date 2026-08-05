@@ -7,6 +7,9 @@ Grown out of [a DevTools console snippet][gist] that made event text transparent
 this repo turns it into a loadable extension with a real on/off toggle, a scoped
 selector that leaves the rest of the Outlook UI alone, and no network access.
 
+Outlook Web works out of the box. Right-click the toolbar icon → **Options** to
+add other sites, choosing the URLs and the CSS selectors to mask.
+
 Unofficial, not affiliated with Microsoft.
 
 ```
@@ -28,7 +31,9 @@ node tools/make-icons.mjs
 Check the CSS selector against a browser engine without needing an Outlook
 account — serve the repo over HTTP and open `tools/selector-fixture.html`. It
 reproduces Outlook's ARIA structure and asserts which elements the stylesheet
-must mask and which it must leave alone.
+must mask and which it must leave alone. The stylesheet it tests is generated
+from `src/rules.js`, so the fixture always checks what the extension would
+actually inject.
 
 ## License
 
