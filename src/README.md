@@ -32,7 +32,7 @@ switch it off or read the underlying page.
 
 1. Open `chrome://extensions`.
 2. Turn on **Developer mode** (top right).
-3. Click **Load unpacked** and select this `calendar-privacy-blur/` folder — the
+3. Click **Load unpacked** and select this `src/` folder — the
    one containing `manifest.json`.
 4. Open your Outlook Web calendar. Event titles should already be masked.
    Supported hosts are `outlook.cloud.microsoft`, `outlook.office.com`,
@@ -78,11 +78,11 @@ The stylesheet is applied with `chrome.scripting.insertCSS` and removed with
 That is what makes the toggle instant: a static entry can only be undone by
 reloading the page.
 
-`chrome.storage.local` is the single source of truth. The popup writes the flag;
-the service worker watches for the change and reconciles every open calendar tab
-(not just the active one). The same reconcile runs on install, on browser
-startup, and on tab navigation, which is what makes the setting persist across
-restarts and apply automatically to newly opened tabs.
+`chrome.storage.local` is the single source of truth. Clicking the toolbar icon
+writes the flag; the service worker watches for the change and reconciles every
+open calendar tab (not just the active one). The same reconcile runs on install,
+on browser startup, and on tab navigation, which is what makes the setting persist
+across restarts and apply automatically to newly opened tabs.
 
 The CSS is injected with `origin: "USER"`. User-origin `!important` declarations
 outrank author-origin ones, so Outlook's own styles cannot beat the mask. This is

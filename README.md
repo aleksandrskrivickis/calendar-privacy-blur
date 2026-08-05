@@ -10,11 +10,11 @@ selector that leaves the rest of the Outlook UI alone, and no network access.
 Unofficial, not affiliated with Microsoft.
 
 ```
-calendar-privacy-blur/   the extension — load this folder unpacked
-tools/                   icon generator and the selector test fixture
+src/     the extension — load this folder unpacked
+tools/   icon generator and the selector test fixture
 ```
 
-**→ [calendar-privacy-blur/README.md](calendar-privacy-blur/README.md)** for what
+**→ [src/README.md](src/README.md)** for what
 it does, how to load it in `chrome://extensions`, and the known limitations.
 
 ## Working on it

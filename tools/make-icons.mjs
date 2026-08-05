@@ -15,7 +15,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "calendar-privacy-blur", "icons");
+const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "icons");
 const SIZES = [16, 48, 128];
 const SS = 8; // supersampling factor per axis
 
