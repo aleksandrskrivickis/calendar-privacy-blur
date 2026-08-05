@@ -30,8 +30,17 @@ const CASES = [
   ["event-time", "MASKED", "event time span"],
   ["agenda-option", "MASKED", "agenda list option"],
   ["agenda-title", "MASKED", "agenda option title"],
-  ["appsection-chip", "MASKED", "chip under data-app-section"],
-  ["appsection-title", "MASKED", "title under data-app-section"],
+  ["appsection-chip", "MASKED", "timed event in calendar-view-0"],
+  ["appsection-title", "MASKED", "timed event title in calendar-view-0"],
+
+  // Regression guard. All-day events sit in a section named "…header…", so any
+  // attempt to narrow the scope by excluding header sections unmasks them.
+  ["allday-chip", "MASKED", "all-day event in calendar-view-header-0"],
+  ["allday-title", "MASKED", "all-day event title (the easy one to lose)"],
+
+  // Real chrome hooks from live Outlook.
+  ["ribbon-new", "VISIBLE", "New event button in Ribbon"],
+  ["navtoolbar-next", "VISIBLE", "next-week arrow in CalendarSurfaceNavigationToolbar"],
 
   // Icons stay readable inside a masked chip.
   ["event-icon", "VISIBLE", "recurring glyph inside masked chip"],

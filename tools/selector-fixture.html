@@ -105,10 +105,40 @@
       </div>
     </main>
 
-    <!-- Outlook's own container hook, independent of the ARIA scope. -->
-    <div data-app-section="CalendarSurfaceContainer">
-      <div role="button" aria-label="Dentist, 4:00 PM" id="appsection-chip">
-        <span id="appsection-title">Dentist</span>
+    <!-- ============================================================
+         Outlook's real container hooks, transcribed from a live
+         outlook.office.com work-week view. This is the branch that
+         actually does the work; the ARIA scope above is a fallback.
+         ============================================================ -->
+
+    <div data-app-section="Ribbon">
+      <!-- No "calendar" in the section name, so never in scope at all. -->
+      <div role="button" aria-label="New event" id="ribbon-new">New event</div>
+    </div>
+
+    <div data-app-section="CalendarSurfaceNavigationToolbar" role="toolbar">
+      <!-- The section name DOES contain "calendar", so this is in scope and is
+           saved only by the role="toolbar" guard. That guard is load-bearing. -->
+      <div role="button" aria-label="Go to next week" id="navtoolbar-next">&gt;</div>
+    </div>
+
+    <div data-app-section="CalendarModuleSurface">
+      <!-- All-day events live in a section named "…header…". Excluding header
+           sections silently unmasks them — see README, Known limitations. -->
+      <div data-app-section="calendar-view-header-0">
+        <div data-calitemid="AAkALgAAAAA1">
+          <div role="button" aria-label="PTO — Aleksandrs" id="allday-chip">
+            <span id="allday-title">PTO</span>
+          </div>
+        </div>
+      </div>
+
+      <div data-app-section="calendar-view-0">
+        <div data-calitemid="AAkALgAAAAA2">
+          <div role="button" aria-label="Dentist, 4:00 PM to 4:30 PM" id="appsection-chip">
+            <span id="appsection-title">Dentist</span>
+          </div>
+        </div>
       </div>
     </div>
 

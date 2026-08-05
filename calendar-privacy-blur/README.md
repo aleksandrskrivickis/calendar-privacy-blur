@@ -36,8 +36,13 @@ switch it off or read the underlying page.
    one containing `manifest.json`.
 4. Open <https://outlook.office.com/calendar/> (or `outlook.office365.com` /
    `outlook.live.com`). Event titles should already be masked.
-5. Click the extension icon to toggle. The change applies to the open tab
-   immediately, with no reload.
+5. Click the extension icon to toggle. There is no popup — one click flips it,
+   and the change applies to every open calendar tab immediately, with no
+   reload.
+
+If a calendar tab was already open *before* you loaded the extension, give it a
+reload the first time. Chrome does not inject content scripts into pages that
+were already open at install time.
 
 The toolbar icon shows an **OFF** badge whenever masking is disabled, so you can
 confirm the state at a glance before starting a screen share.
@@ -60,9 +65,12 @@ confirm the state at a glance before starting a screen share.
 | File | Role |
 | --- | --- |
 | `hide-events.css` | The mask. Never injected statically — see below. |
-| `background.js` | Service worker. Owns all injection decisions. |
+| `background.js` | Service worker. Owns all injection decisions, and flips the flag when the toolbar icon is clicked. |
 | `content.js` | Tells the worker when a calendar document is live. |
-| `popup.html/.css/.js` | The toggle. Writes `blurEnabled` and nothing else. |
+
+There is no popup: clicking the toolbar icon toggles the mask directly.
+`chrome.action.onClicked` only fires when no `default_popup` is declared, so the
+two are mutually exclusive.
 
 The stylesheet is applied with `chrome.scripting.insertCSS` and removed with
 `removeCSS`, rather than being declared as a static `content_scripts.css` entry.
@@ -84,6 +92,19 @@ appears stuck) rather than silently leaving a title readable on a shared screen.
 
 **The selector depends on Outlook Web's DOM, which Microsoft can change without
 notice.** This is the part most likely to need maintenance.
+
+It has been verified against live Outlook Web (`outlook.office.com`, work-week
+view): 35/35 event chips masked, 59/59 icons still visible, the Ribbon and the
+navigation toolbar untouched. In practice the `data-app-section` hook is what
+does the work — Outlook's single `role="grid"` sits *outside* `[role="main"]`,
+so that branch of the allowlist is dead weight kept only as a fallback.
+
+**If you tighten the scope, verify against `[data-calitemid]`, not against
+timestamps in the label.** All-day events live in a section called
+`calendar-view-header-0`. Excluding "header" sections looks obviously correct and
+drops exactly the chips with no clock time in their label — but those chips *are*
+the all-day events, and you will have silently unmasked "PTO" and
+"Interview: &lt;name&gt;" while everything still looks fine.
 
 Outlook reuses `role="button"` for nearly every control in the app, so the mask
 cannot simply target `[role="button"][aria-label]` the way the original console

@@ -4,9 +4,9 @@
  * Single responsibility: keep every Outlook Web calendar tab's injected CSS in
  * sync with the `blurEnabled` flag in chrome.storage.local.
  *
- * The popup never injects anything itself; it only writes the flag. Storage is
- * the single source of truth, which is what makes the state survive browser
- * restarts and apply to tabs opened later.
+ * Clicking the toolbar icon only writes the flag; this file is the sole place
+ * that injects. Storage is the single source of truth, which is what makes the
+ * state survive browser restarts and apply to tabs opened later.
  */
 
 const CSS_FILE = "hide-events.css";
@@ -109,9 +109,9 @@ async function syncAllTabs(enabled) {
 }
 
 /**
- * Surface the state on the toolbar icon. Worth the few lines: the whole point
- * is knowing whether titles are hidden *before* sharing a screen, and that
- * should not require opening the popup.
+ * Surface the state on the toolbar icon. With no popup this badge is the only
+ * state indicator, and the whole point is knowing whether titles are hidden
+ * *before* sharing a screen.
  */
 async function reflectState(enabled) {
   try {
@@ -154,6 +154,22 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local" || !changes.blurEnabled) return;
   enqueue(() => syncAllTabs(changes.blurEnabled.newValue !== false));
+});
+
+/**
+ * Clicking the toolbar icon flips the mask. There is no popup: `onClicked` only
+ * fires when `action.default_popup` is unset.
+ *
+ * This writes the flag and stops. The storage listener above does the actual
+ * reconcile, so icon clicks and any other future entry point all travel the
+ * same path. Queued so a double-click cannot read a stale value and land on the
+ * wrong state.
+ */
+chrome.action.onClicked.addListener(() => {
+  enqueue(async () => {
+    const enabled = await isEnabled();
+    await chrome.storage.local.set({ blurEnabled: !enabled });
+  });
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {

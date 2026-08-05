@@ -26,6 +26,29 @@
 }
 
 /* ============================================================================
+ * VERIFIED against live Outlook Web (outlook.office.com, work-week view):
+ * 35/35 event chips masked, 59/59 icons still visible, Ribbon and navigation
+ * toolbar untouched. Real container values seen on the page were:
+ *
+ *   CalendarModule, CalendarModuleSurface, Surface_WorkWeek,
+ *   calendar-view-0, calendar-view-header-0,
+ *   CalendarSurfaceNavigationToolbar, Ribbon, NotificationPane
+ *
+ * Two things that matter for anyone editing this file:
+ *
+ *   - `data-app-section` is what actually does the work. The
+ *     `[role="main"] [role="grid"]` branch matched *nothing* live — Outlook's
+ *     one `role="grid"` sits outside `[role="main"]`. It is kept only as a
+ *     fallback in case the attribute hook changes.
+ *
+ *   - DO NOT exclude sections whose name contains "header". All-day events
+ *     live in `calendar-view-header-0`, despite the name. Filtering "header"
+ *     out looks correct — it drops exactly the chips whose aria-label has no
+ *     clock time — but it silently unmasks every all-day event ("PTO",
+ *     "Interview: <name>"). Verify against `[data-calitemid]`, which marks
+ *     real events, rather than against the presence of a time in the label.
+ *
+ * ----------------------------------------------------------------------------
  * 1. WHY THE SELECTOR IS SCOPED  (the part most likely to need maintenance)
  *
  * The original console snippet used a bare `[role="button"][aria-label]`.
