@@ -9,6 +9,7 @@
     "storage"
   ],
   "host_permissions": [
+    "https://outlook.cloud.microsoft/calendar/*",
     "https://outlook.office.com/calendar/*",
     "https://outlook.office365.com/calendar/*",
     "https://outlook.live.com/calendar/*"
@@ -19,6 +20,7 @@
   "content_scripts": [
     {
       "matches": [
+        "https://outlook.cloud.microsoft/calendar/*",
         "https://outlook.office.com/calendar/*",
         "https://outlook.office365.com/calendar/*",
         "https://outlook.live.com/calendar/*"

@@ -17,20 +17,30 @@ const CSS_FILE = "hide-events.css";
  */
 const CSS_ORIGIN = "USER";
 
-/** Mirrors `host_permissions` in manifest.json. Keep the two in step. */
+/**
+ * Mirrors `host_permissions` in manifest.json. Keep the two in step.
+ *
+ * `outlook.cloud.microsoft` is Microsoft's newer Outlook Web domain, and it is
+ * first here because tenants are being migrated onto it: `outlook.office.com`
+ * now redirects there, which silently takes the extension out of scope on any
+ * account that has been moved. The older hosts stay listed because the rollout
+ * is gradual and personal accounts still land on `outlook.live.com`.
+ */
 const CALENDAR_MATCHES = [
+  "https://outlook.cloud.microsoft/calendar/*",
   "https://outlook.office.com/calendar/*",
   "https://outlook.office365.com/calendar/*",
   "https://outlook.live.com/calendar/*",
 ];
 
 /**
- * Same three patterns as a regex, used to pre-check a URL before touching it.
+ * The same patterns as a regex, used to pre-check a URL before touching it.
  * Injecting into a tab we lack permission for would throw and log noise, so we
  * simply never ask. The trailing slash is required because the host permission
  * `…/calendar/*` does not cover a bare `…/calendar`.
  */
-const CALENDAR_URL = /^https:\/\/outlook\.(?:office|office365|live)\.com\/calendar\//;
+const CALENDAR_URL =
+  /^https:\/\/outlook\.(?:cloud\.microsoft|office\.com|office365\.com|live\.com)\/calendar\//;
 
 const DEFAULTS = { blurEnabled: true };
 

@@ -34,8 +34,9 @@ switch it off or read the underlying page.
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select this `calendar-privacy-blur/` folder — the
    one containing `manifest.json`.
-4. Open <https://outlook.office.com/calendar/> (or `outlook.office365.com` /
-   `outlook.live.com`). Event titles should already be masked.
+4. Open your Outlook Web calendar. Event titles should already be masked.
+   Supported hosts are `outlook.cloud.microsoft`, `outlook.office.com`,
+   `outlook.office365.com` and `outlook.live.com`.
 5. Click the extension icon to toggle. There is no popup — one click flips it,
    and the change applies to every open calendar tab immediately, with no
    reload.
@@ -57,7 +58,7 @@ confirm the state at a glance before starting a screen share.
 - **No page reading.** The content script sends one message — "a calendar
   document is live here" — and never inspects or extracts page content.
 - **Permissions.** `storage` for the toggle, `scripting` to add and remove the
-  stylesheet, and host access limited to the three Outlook Web calendar paths.
+  stylesheet, and host access limited to the four Outlook Web calendar paths.
   Chrome shows no warnings beyond those hosts.
 
 ## How it works
@@ -137,6 +138,15 @@ document.querySelectorAll(
 structure and asserts which elements should and should not be masked. Serve the
 repo over `http://` and open it to re-check a selector change without needing an
 Outlook account.
+
+**The host list is the other silent failure mode, and it bites harder than the
+selector.** Microsoft is migrating Outlook Web to `outlook.cloud.microsoft`;
+`outlook.office.com` now redirects there for migrated accounts. A host that is
+not in `host_permissions` gets no injection at all, so the mask just stops
+working — with no error anywhere, because the extension is never invoked. If
+masking stops, check the address bar first: if the domain is not one of the four
+listed above, add it to `host_permissions` *and* `content_scripts.matches` in
+`manifest.json`, and to `CALENDAR_MATCHES` / `CALENDAR_URL` in `background.js`.
 
 Other limitations:
 
