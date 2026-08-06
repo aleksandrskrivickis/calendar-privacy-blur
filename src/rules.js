@@ -174,9 +174,57 @@ ${descendants} {
 }`);
 
   const extra = (rule.extraCss ?? "").trim();
-  if (extra) blocks.push(extra);
+  if (extra && !extraCssError(extra)) blocks.push(extra);
 
   return blocks.join("\n\n");
+}
+
+/* -------------------------------------------------------------------------- */
+/* Extra CSS safety                                                           */
+/* -------------------------------------------------------------------------- */
+
+/** Declarations that make the browser fetch something. */
+const RESOURCE_CSS_RE =
+  /@import\b|(?:^|[^\w-])(?:url|src|image-set|-webkit-image-set)\s*\(/i;
+
+/**
+ * Extra CSS is appended verbatim, so it is the one place where a rule could
+ * reach the network: `background-image: url(https://…)`, a remote `@font-face`
+ * source or `@import` all issue requests wherever the page's CSP allows them.
+ * That would forfeit the property the extension is built on — it looks at
+ * pages, it never talks about them — so resource-loading CSS is refused rather
+ * than shipped with a warning.
+ *
+ * Checked with the browser's own CSS parser where there is one (the settings
+ * page), because serialising the parsed rules normalises escapes and comments
+ * that a textual scan alone could be walked past. The raw text is scanned too:
+ * constructed stylesheets drop `@import` silently, and unparseable input still
+ * has to be judged.
+ *
+ * Returns an error message, or `null` when the CSS is fine.
+ */
+export function extraCssError(css) {
+  const text = String(css ?? "");
+  if (!text.trim()) return null;
+
+  const candidates = [text];
+  if (typeof CSSStyleSheet === "function") {
+    try {
+      const sheet = new CSSStyleSheet();
+      sheet.replaceSync(text);
+      candidates.push([...sheet.cssRules].map((r) => r.cssText).join("\n"));
+    } catch {
+      // Nothing parsed; the raw scan below still applies.
+    }
+  }
+
+  if (candidates.some((c) => RESOURCE_CSS_RE.test(c))) {
+    return (
+      "Extra CSS may not load remote resources: remove url(), image-set(), " +
+      "src() and @import."
+    );
+  }
+  return null;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -288,6 +336,9 @@ export function validateRule(rule) {
     check(rule.mask, "Mask selector");
     check(rule.keepVisible, "Keep-visible selector");
   }
+
+  const extraError = extraCssError(rule.extraCss);
+  if (extraError) errors.push(extraError);
 
   if ((rule.matches ?? []).length === 0) errors.push("Add at least one URL.");
   if ((rule.mask ?? []).length === 0) {

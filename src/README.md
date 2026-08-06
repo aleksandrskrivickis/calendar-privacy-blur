@@ -93,9 +93,9 @@ point, not a promise.
 Settings take CSS selectors and CSS, never JavaScript. Masking text is a styling
 problem, and every case worth covering is reachable with a selector. Running
 user-supplied script would give rules direct access to page data, so scripts are
-not supported. Extra CSS is available as an advanced escape hatch, but use only
-CSS you trust: resource declarations such as `url(...)` can initiate network
-requests when the site's security policy allows them.
+not supported. Extra CSS is available as an advanced escape hatch, and it is
+rejected if it can fetch anything — `url(...)`, `image-set(...)`, `src(...)` and
+`@import` are refused — so a rule still cannot send a request from your page.
 
 ## How it works
 
