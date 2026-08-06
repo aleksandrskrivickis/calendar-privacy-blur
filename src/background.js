@@ -178,9 +178,7 @@ async function syncAllTabs() {
   } catch {
     return;
   }
-  await Promise.all(
-    tabs.filter((t) => t.url && maybeCovered(t.url)).map((t) => applyToTab(t.id, t.url)),
-  );
+  await Promise.all(tabs.filter((t) => t.url).map((t) => applyToTab(t.id, t.url)));
 }
 
 /**
