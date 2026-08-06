@@ -4,12 +4,12 @@ Masks the text of calendar events so your meeting titles stay private while you
 share your screen. Icons stay visible, layout stays intact, and one click on the
 toolbar icon turns it off again.
 
-Outlook Web works out of the box. Other sites can be added in **Settings**
-(right-click the toolbar icon → Options), where you choose the URLs and the
-elements to mask.
+**Outlook Web and Google Calendar both work out of the box.** Other sites can be
+added in **Settings** (right-click the toolbar icon → Options), where you choose
+the URLs and the elements to mask.
 
-Unofficial and not affiliated with Microsoft. "Outlook" appears here only to
-describe which site the extension works on.
+Unofficial and not affiliated with Microsoft or Google. Their names appear here
+only to describe which sites the extension works on.
 
 ## What it does
 
@@ -38,9 +38,9 @@ switch it off or read the underlying page.
 2. Turn on **Developer mode** (top right).
 3. Click **Load unpacked** and select this `src/` folder — the
    one containing `manifest.json`.
-4. Open your Outlook Web calendar. Event titles should already be masked.
-   Supported hosts are `outlook.cloud.microsoft`, `outlook.office.com`,
-   `outlook.office365.com` and `outlook.live.com`.
+4. Open your calendar. Event titles should already be masked. Supported hosts
+   are `outlook.cloud.microsoft`, `outlook.office.com`, `outlook.office365.com`,
+   `outlook.live.com` and `calendar.google.com`.
 5. Click the extension icon to toggle. There is no popup — one click flips it,
    and the change applies to every open calendar tab immediately, with no
    reload.
@@ -63,9 +63,12 @@ confirm the state at a glance before starting a screen share.
 - **No page reading.** The content script sends one message — "a calendar
   document is live here" — and never inspects or extracts page content.
 - **Permissions.** `storage` for settings, `scripting` to add and remove the
-  stylesheet, and host access limited to the four Outlook Web calendar paths.
-  Any other site you add in settings asks for its own permission at that point,
-  and you can revoke it from `chrome://extensions` at any time.
+  stylesheet, and host access limited to the four Outlook Web calendar paths
+  plus `calendar.google.com`. Any other site you add in settings asks for its
+  own permission at that point, and you can revoke it from `chrome://extensions`
+  at any time. If you only use one of the two calendars, disable the other
+  service in settings — that stops the extension acting on it, though revoking
+  the host permission itself has to be done from `chrome://extensions`.
 
 ## Settings
 
@@ -84,9 +87,11 @@ Use it. A selector that matches nothing looks exactly like an extension that is
 working fine, right up until someone shares their screen — that silent failure is
 the main hazard of this whole design, and the test button is the antidote.
 
-**The "unverified" badge is meant literally.** Only the Outlook Web service has
-been checked against the real site. The Google Calendar template is a starting
-point, not a promise.
+**The "unverified" badge is meant literally.** The two shipped services, Outlook
+Web and Google Calendar, have both been checked against the live sites and are
+marked verified. Anything you add yourself starts unverified, and editing a
+verified service's URLs or selectors drops the badge — the claim belongs to the
+selectors that were actually tested, not to the name on the card.
 
 ### Why selectors and not scripts
 
@@ -136,8 +141,25 @@ appears stuck) rather than silently leaving a title readable on a shared screen.
 
 ## Known limitations
 
-**The selector depends on Outlook Web's DOM, which Microsoft can change without
-notice.** This is the part most likely to need maintenance.
+**Google Calendar** is masked via `[role="main"] [data-eventchip]`. Verified live:
+40/40 chips in week view, 162/162 in month view (111 timed and 51 all-day or
+multi-day), no app chrome touched, and all 115 icon paths still painted. It
+needs no denylist — `data-eventchip` matched exactly the event chips with no
+false positives, and `[role="main"]` keeps it clear of the sidebar
+mini-calendar, which is a second `role="grid"` on the page.
+
+Unlike Outlook, Google marks timed and all-day events with the *same* attribute,
+so one selector covers both and the all-day trap described below does not exist
+there.
+
+One thing to preserve if you edit the keep-visible rules: Google draws icons as
+a mix of filled and outline paths, and 58 of them in a month view carry
+`fill="none"`. The generated CSS restores `color` but deliberately never
+declares `fill` — a `fill: currentColor !important` would override those and
+turn outline icons into solid blocks.
+
+**The Outlook selector depends on Outlook Web's DOM, which Microsoft can change
+without notice.** This is the part most likely to need maintenance.
 
 It has been verified against live Outlook Web (`outlook.office.com`, work-week
 view): 35/35 event chips masked, 59/59 icons still visible, the Ribbon and the

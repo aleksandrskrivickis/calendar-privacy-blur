@@ -7,7 +7,8 @@ Grown out of [a DevTools console snippet][gist] that made event text transparent
 this repo turns it into a loadable extension with a real on/off toggle, a scoped
 selector that leaves the rest of the Outlook UI alone, and no network access.
 
-Outlook Web works out of the box. Right-click the toolbar icon → **Options** to
+Outlook Web and Google Calendar both work out of the box. Right-click the
+toolbar icon → **Options** to
 add other sites, choosing the URLs and the CSS selectors to mask.
 
 Unofficial, not affiliated with Microsoft.
@@ -21,6 +22,34 @@ tools/   icon generator and the selector test fixture
 it does, how to load it in `chrome://extensions`, and the known limitations.
 
 ## Working on it
+
+### Branch naming
+
+```
+<prefix>/<NNN>-<kebab-description>
+```
+
+| Prefix | For |
+| --- | --- |
+| `feature/` | new user-facing capability |
+| `fix/` | bug fix |
+| `chore/` | tooling, CI, dependencies — nothing user-facing |
+| `docs/` | documentation only |
+| `refactor/` | internal restructuring, no behaviour change |
+| `issue/` | work tracked by a GitHub issue |
+
+`NNN` is zero-padded and increments across the whole repo regardless of prefix,
+so branches sort in the order they were started. For `issue/`, use the issue
+number instead of the sequence. Keep the description to four words or fewer.
+
+```
+feature/001-google-calendar-support
+fix/002-cloud-microsoft-host
+issue/42-all-day-events-unmasked
+```
+
+Take the next number from `git branch -a`. Branches created before this
+convention keep their names and don't count toward the sequence.
 
 ### Automatic version bumping
 

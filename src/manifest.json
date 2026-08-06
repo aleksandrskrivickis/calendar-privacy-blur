@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Calendar Privacy Blur for Outlook Web",
   "version": "1.1.0",
-  "description": "Masks calendar event titles so they stay private while screen sharing. Ships with Outlook Web; other sites can be added in settings. Unofficial, not affiliated with Microsoft.",
+  "description": "Masks calendar event titles so they stay private while screen sharing. Works on Outlook Web and Google Calendar; other sites can be added in settings. Unofficial, not affiliated with Microsoft or Google.",
   "minimum_chrome_version": "111",
   "permissions": [
     "scripting",
@@ -12,7 +12,8 @@
     "https://outlook.cloud.microsoft/calendar/*",
     "https://outlook.office.com/calendar/*",
     "https://outlook.office365.com/calendar/*",
-    "https://outlook.live.com/calendar/*"
+    "https://outlook.live.com/calendar/*",
+    "https://calendar.google.com/*"
   ],
   "optional_host_permissions": [
     "https://*/*",
@@ -28,7 +29,8 @@
         "https://outlook.cloud.microsoft/calendar/*",
         "https://outlook.office.com/calendar/*",
         "https://outlook.office365.com/calendar/*",
-        "https://outlook.live.com/calendar/*"
+        "https://outlook.live.com/calendar/*",
+        "https://calendar.google.com/*"
       ],
       "js": [
         "content.js"
