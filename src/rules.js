@@ -143,7 +143,7 @@ export function buildCss(rule) {
 
   const keep = (rule.keepVisible ?? []).map((s) => s.trim()).filter(Boolean);
   const self = mask.join(",\n");
-  const descendants = mask.map((s) => `${s} *`).join(",\n");
+  const descendants = mask.map((s) => `:is(${s}) *`).join(",\n");
 
   const blocks = [
     `/* ${rule.name || rule.id} */`,
