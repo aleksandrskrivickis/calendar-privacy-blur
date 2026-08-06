@@ -12,12 +12,6 @@ on:
 permissions:
   contents: write
 
-# Two merges in quick succession must not both bump from the same base and race
-# each other's push.
-concurrency:
-  group: bump-version-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   bump:
     runs-on: ubuntu-latest
@@ -29,9 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Need the previous commit to see whether the version was already
-          # changed by hand in what just landed.
-          fetch-depth: 2
+          # Fetch full history so github.event.before is reachable even for
+          # multi-commit pushes.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -42,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           current="$(node -p "require('./src/manifest.json').version")"
-          if previous="$(git show HEAD~1:src/manifest.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")"; then
+          if previous="$(git show ${{ github.event.before }}:src/manifest.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")"; then
             if [ "$current" != "$previous" ]; then
               echo "Version already went $previous -> $current in this push; leaving it alone."
               echo "skip=true" >> "$GITHUB_OUTPUT"
@@ -70,10 +64,14 @@ jobs:
             exit 0
           fi
           git commit -m "Bump extension version to ${{ steps.bump.outputs.version }} [skip bump]"
-          # Fail loudly rather than silently: a rejected push almost always means
-          # branch protection on main, and a version that quietly stops moving is
-          # exactly the kind of silent failure this repo has been bitten by.
-          if ! git push origin HEAD:main; then
-            echo "::error::Could not push the version bump to main. If main is a protected branch, either allow github-actions[bot] to bypass it, or move this workflow to bump the pull request branch instead (see README)."
-            exit 1
-          fi
+          # Retry with rebase on non-fast-forward failures caused by concurrent runs.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push attempt $attempt failed; retrying after rebase onto origin/main..."
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo "::error::Could not push the version bump to main after retries. If main is a protected branch, either allow github-actions[bot] to bypass it, or move this workflow to bump the pull request branch instead (see README)."
+          exit 1

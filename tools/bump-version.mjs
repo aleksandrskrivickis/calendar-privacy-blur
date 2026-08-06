@@ -34,6 +34,9 @@ export function nextVersion(version) {
   if (!parts.every((p) => /^(0|[1-9]\d*)$/.test(p))) {
     throw new Error(`"${version}" must be dot-separated integers without leading zeros`);
   }
+  if (!parts.every((p) => Number(p) <= MAX_COMPONENT)) {
+    throw new Error(`"${version}" has a component that exceeds Chrome's limit of ${MAX_COMPONENT}`);
+  }
   const bumped = Number(parts[parts.length - 1]) + 1;
   if (bumped > MAX_COMPONENT) {
     throw new Error(`bumping "${version}" would exceed Chrome's limit of ${MAX_COMPONENT}`);
