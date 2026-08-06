@@ -14,7 +14,13 @@
  * for no gain in what it can hide.
  */
 
-export const SCHEMA_VERSION = 2;
+/**
+ * Bumped whenever a new built-in service ships, so an existing install picks it
+ * up exactly once. See `mergeMissingBuiltins`.
+ *   2 — rules replaced the single `blurEnabled` flag
+ *   3 — Google Calendar added as a built-in
+ */
+export const SCHEMA_VERSION = 3;
 
 /**
  * Appearance of the mask. Not user-configurable: these are the values verified
@@ -74,6 +80,7 @@ export const PRESETS = [
     name: "Outlook Web calendar",
     verified: true,
     builtin: true,
+    introducedIn: 2, // schema version when this preset was first shipped
     matches: [
       "https://outlook.cloud.microsoft/calendar/*",
       "https://outlook.office.com/calendar/*",
@@ -84,11 +91,29 @@ export const PRESETS = [
     keepVisible: ["i", "svg", "svg *", "[data-icon-name]", '[class*="ms-Icon"]'],
     extraCss: "",
   },
+  /**
+   * Verified live against calendar.google.com: week view 40/40 chips masked,
+   * month view 162/162 (111 timed and 51 all-day or multi-day), 0 app-chrome
+   * elements touched, and all 115 icon paths still painted.
+   *
+   * `data-eventchip` does all the work and needs no denylist. Unlike Outlook,
+   * Google marks timed and all-day events with the same attribute, so one
+   * selector covers both — the all-day trap that Outlook has does not exist
+   * here. Nothing else on the page carries the attribute: it matched exactly
+   * the chips, with no false positives in either view.
+   *
+   * `[role="main"]` scopes it away from the sidebar mini-calendar, which is a
+   * second `role="grid"` on the page, and from event detail popups.
+   *
+   * `svg *` is in keepVisible so inner paths get their colour back; see the
+   * note in buildCss for why the rule must not touch `fill`.
+   */
   {
     id: "google-calendar",
     name: "Google Calendar",
-    verified: false,
-    builtin: false,
+    verified: true,
+    builtin: true,
+    introducedIn: 3, // schema version when this preset was first shipped
     matches: ["https://calendar.google.com/*"],
     mask: ['[role="main"] [data-eventchip]'],
     keepVisible: ["i", "svg", "svg *", "img"],
@@ -106,13 +131,22 @@ export const PRESETS = [
   },
 ];
 
-/** The shipped configuration: Outlook on, nothing else. */
+/**
+ * The shipped configuration: every built-in service on.
+ *
+ * A service is built in when its selectors have been verified against the live
+ * site *and* its hosts are declared in the manifest, so it works on install
+ * with no permission prompt. Templates that are neither stay in PRESETS for the
+ * "Add service" picker.
+ */
 export function defaultSettings() {
-  const outlook = PRESETS.find((p) => p.id === "outlook-web");
   return {
     schemaVersion: SCHEMA_VERSION,
     blurEnabled: true,
-    rules: [{ ...structuredClone(outlook), enabled: true }],
+    rules: PRESETS.filter((p) => p.builtin).map((p) => ({
+      ...structuredClone(p),
+      enabled: true,
+    })),
   };
 }
 
@@ -134,8 +168,15 @@ export function defaultSettings() {
  *
  * The keep-visible rule needs an *explicit* colour, not `inherit`. `inherit`
  * resolves to the parent's computed colour, which the mask just made
- * transparent, so icons would vanish along with the text. `fill: currentColor`
- * has the same problem.
+ * transparent, so icons would vanish along with the text.
+ *
+ * It deliberately says nothing about `fill`. Restoring `color` is enough: an
+ * icon painted with `fill="currentColor"` follows it, and one with its own
+ * colour was never affected. Declaring `fill: currentColor !important` here
+ * looks equivalent but is not — it also overrides `fill="none"`, and outline
+ * icons drawn as unfilled paths turn into solid blobs. Google Calendar has 58
+ * such paths in a month view; Outlook has none, which is why this only surfaced
+ * when a second service was added.
  */
 export function buildCss(rule) {
   const mask = (rule.mask ?? []).map((s) => s.trim()).filter(Boolean);
@@ -162,7 +203,6 @@ ${descendants} {
     blocks.push(`${keepSel} {
   color: var(--cpb-icon-color) !important;
   -webkit-text-fill-color: var(--cpb-icon-color) !important;
-  fill: currentColor !important;
   text-shadow: none !important;
 }`);
   }
@@ -383,6 +423,32 @@ export function normalise(raw) {
       keepVisible: Array.isArray(r.keepVisible) ? r.keepVisible : [],
       extraCss: typeof r.extraCss === "string" ? r.extraCss : "",
     })),
+  };
+}
+
+/**
+ * Adds built-in services introduced after the stored schema version, for an
+ * install that predates them. Returns a new settings object, or `null` if
+ * nothing was missing.
+ *
+ * `storedSchemaVersion` is the version from storage before normalisation bumped
+ * it. Only presets whose `introducedIn` exceeds that version are added, so an
+ * old built-in that the user deliberately removed stays deleted.
+ */
+export function mergeMissingBuiltins(settings, storedSchemaVersion) {
+  const have = new Set((settings.rules ?? []).map((r) => r.id));
+  const missing = PRESETS.filter(
+    (p) =>
+      p.builtin && !have.has(p.id) && (p.introducedIn ?? 0) > storedSchemaVersion,
+  );
+  if (missing.length === 0) return null;
+  return {
+    ...settings,
+    schemaVersion: SCHEMA_VERSION,
+    rules: [
+      ...settings.rules,
+      ...missing.map((p) => ({ ...structuredClone(p), enabled: true })),
+    ],
   };
 }
 

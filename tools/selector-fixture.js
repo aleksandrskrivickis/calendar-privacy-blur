@@ -9,10 +9,10 @@
 
 import { PRESETS, buildCss } from "../src/rules.js";
 
-const outlook = PRESETS.find((preset) => preset.id === "outlook-web");
+// Every shipped service, exactly as the extension would inject it.
 const style = document.createElement("style");
 style.id = "cpb-generated";
-style.textContent = buildCss(outlook);
+style.textContent = PRESETS.filter((p) => p.builtin).map(buildCss).join("\n\n");
 document.head.appendChild(style);
 
 const TRANSPARENT = "rgba(0, 0, 0, 0)";
@@ -56,13 +56,31 @@ const CASES = [
   // Icons stay readable inside a masked chip.
   ["event-icon", "VISIBLE", "recurring glyph inside masked chip"],
   ["event-svg-circle", "VISIBLE", "svg fill inside masked chip"],
+
+  /* --- Google Calendar ---------------------------------------------------- */
+  ["gcal-chip", "MASKED", "event chip in role=main"],
+  ["gcal-title", "MASKED", "event title"],
+  ["gcal-allday", "MASKED", "all-day chip (same data-eventchip hook)"],
+  ["gcal-allday-title", "MASKED", "all-day event title"],
+  ["gcal-svg", "VISIBLE", "chip icon root"],
+  ["gcal-path-filled", "VISIBLE", "filled icon path follows currentColor"],
+  // The regression guard. Restoring colour must not also force a fill.
+  ["gcal-path-outline", "UNFILLED", "outline icon path keeps fill:none"],
+  ["gcal-create", "VISIBLE", "Create button (outside role=main)"],
+  ["gcal-search", "VISIBLE", "Search button (outside role=main)"],
 ];
 
 function state(el) {
   const cs = getComputedStyle(el);
-  const fill = cs.webkitTextFillColor || cs.color;
   // SVG shapes carry no text; judge them on `fill`.
-  const paint = el.namespaceURI === "http://www.w3.org/2000/svg" ? cs.fill : fill;
+  if (el.namespaceURI === "http://www.w3.org/2000/svg") {
+    // UNFILLED is its own outcome, not a flavour of VISIBLE: a rule that forces
+    // `fill: currentColor` would turn an outline icon into a solid block while
+    // still counting as "visible".
+    if (cs.fill === "none") return "UNFILLED";
+    return cs.fill === TRANSPARENT ? "MASKED" : "VISIBLE";
+  }
+  const paint = cs.webkitTextFillColor || cs.color;
   return paint === TRANSPARENT ? "MASKED" : "VISIBLE";
 }
 

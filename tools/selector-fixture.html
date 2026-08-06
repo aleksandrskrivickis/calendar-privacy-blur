@@ -144,6 +144,41 @@
       </div>
     </div>
 
+    <!-- ============================================================
+         Google Calendar. Transcribed from a live calendar.google.com
+         month view, with one simplification: the real page nests these
+         in role="grid" / role="row" / role="gridcell", which is omitted
+         here so the Outlook rule's selector cannot also match them and
+         blur which service an assertion is actually testing. The Google
+         selector does not depend on that nesting.
+         ============================================================ -->
+    <div role="main">
+      <div data-eventchip data-eventid="a1" id="gcal-chip">
+        <div role="button">
+          <span id="gcal-title">Budget sync</span>
+          <svg id="gcal-svg" width="10" height="10" viewBox="0 0 10 10">
+            <!-- Google draws icons as a mix of filled and outline paths. The
+                 outline one is the regression guard: a rule that forces
+                 fill:currentColor turns it into a solid block. -->
+            <path id="gcal-path-filled" d="M0 0h10v10H0z" fill="currentColor" />
+            <path id="gcal-path-outline" d="M1 1h8v8H1z" fill="none" stroke="currentColor" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- All-day events carry the same data-eventchip attribute as timed ones,
+           so one selector covers both. No equivalent of Outlook's all-day trap. -->
+      <div data-eventchip data-eventid="a2" id="gcal-allday">
+        <div role="button"><span id="gcal-allday-title">Team offsite</span></div>
+      </div>
+    </div>
+
+    <!-- Google app chrome: outside role="main", must never be masked. -->
+    <div role="banner">
+      <div role="button" aria-label="Create" id="gcal-create">Create</div>
+      <div role="button" aria-label="Search" id="gcal-search">Search</div>
+    </div>
+
     <table class="report" id="report">
       <thead>
         <tr><th>Element</th><th>Expected</th><th>Actual</th><th>Result</th></tr>

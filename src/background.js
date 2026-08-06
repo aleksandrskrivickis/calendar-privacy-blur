@@ -11,11 +11,14 @@
  */
 
 import {
+  SCHEMA_VERSION,
   activePatterns,
   buildCss,
   defaultSettings,
   getSettings,
   matchPatternToRegExp,
+  mergeMissingBuiltins,
+  normalise,
   ruleMatchesUrl,
   saveSettings,
 } from "./rules.js";
@@ -280,6 +283,13 @@ chrome.runtime.onInstalled.addListener(() => {
       const seeded = defaultSettings();
       seeded.blurEnabled = raw.blurEnabled !== false;
       await saveSettings(seeded);
+    } else if ((raw.schemaVersion ?? 0) < SCHEMA_VERSION) {
+      // An install that predates a built-in service picks it up here, once.
+      // Pass the stored version so only services introduced after it are added.
+      const storedVersion = raw.schemaVersion ?? 0;
+      const normalised = normalise(raw);
+      const merged = mergeMissingBuiltins(normalised, storedVersion);
+      await saveSettings(merged ?? { ...normalised, schemaVersion: SCHEMA_VERSION });
     }
     invalidateCache();
     await syncDynamicContentScripts();
