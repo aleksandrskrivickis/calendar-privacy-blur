@@ -80,6 +80,7 @@ export const PRESETS = [
     name: "Outlook Web calendar",
     verified: true,
     builtin: true,
+    introducedIn: 2, // schema version when this preset was first shipped
     matches: [
       "https://outlook.cloud.microsoft/calendar/*",
       "https://outlook.office.com/calendar/*",
@@ -112,6 +113,7 @@ export const PRESETS = [
     name: "Google Calendar",
     verified: true,
     builtin: true,
+    introducedIn: 3, // schema version when this preset was first shipped
     matches: ["https://calendar.google.com/*"],
     mask: ['[role="main"] [data-eventchip]'],
     keepVisible: ["i", "svg", "svg *", "img"],
@@ -425,17 +427,20 @@ export function normalise(raw) {
 }
 
 /**
- * Adds built-in services the stored config has never seen, for an install that
- * predates them. Returns a new settings object, or `null` if nothing was
- * missing.
+ * Adds built-in services introduced after the stored schema version, for an
+ * install that predates them. Returns a new settings object, or `null` if
+ * nothing was missing.
  *
- * Keyed on `schemaVersion` rather than running on every update, so a service
- * someone deliberately deleted stays deleted instead of reappearing each time
- * the extension updates.
+ * `storedSchemaVersion` is the version from storage before normalisation bumped
+ * it. Only presets whose `introducedIn` exceeds that version are added, so an
+ * old built-in that the user deliberately removed stays deleted.
  */
-export function mergeMissingBuiltins(settings) {
+export function mergeMissingBuiltins(settings, storedSchemaVersion) {
   const have = new Set((settings.rules ?? []).map((r) => r.id));
-  const missing = PRESETS.filter((p) => p.builtin && !have.has(p.id));
+  const missing = PRESETS.filter(
+    (p) =>
+      p.builtin && !have.has(p.id) && (p.introducedIn ?? 0) > storedSchemaVersion,
+  );
   if (missing.length === 0) return null;
   return {
     ...settings,

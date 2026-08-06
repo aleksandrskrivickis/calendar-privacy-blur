@@ -48,7 +48,8 @@ fix/002-cloud-microsoft-host
 issue/42-all-day-events-unmasked
 ```
 
-Take the next number from `git branch -a`. Branches created before this
+Take the next number from the [closed pull requests](../../pulls?q=is:pr+is:closed)
+— each merged branch's number is recorded there. Branches created before this
 convention keep their names and don't count toward the sequence.
 
 ### Automatic version bumping

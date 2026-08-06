@@ -285,7 +285,9 @@ chrome.runtime.onInstalled.addListener(() => {
       await saveSettings(seeded);
     } else if ((raw.schemaVersion ?? 0) < SCHEMA_VERSION) {
       // An install that predates a built-in service picks it up here, once.
-      const merged = mergeMissingBuiltins(normalise(raw));
+      // Pass the stored version so only services introduced after it are added.
+      const storedVersion = raw.schemaVersion ?? 0;
+      const merged = mergeMissingBuiltins(normalise(raw), storedVersion);
       await saveSettings(merged ?? { ...normalise(raw), schemaVersion: SCHEMA_VERSION });
     }
     invalidateCache();
