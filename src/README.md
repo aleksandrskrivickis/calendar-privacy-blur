@@ -92,10 +92,10 @@ point, not a promise.
 
 Settings take CSS selectors and CSS, never JavaScript. Masking text is a styling
 problem, and every case worth covering is reachable with a selector. Running
-user-supplied script would buy nothing and cost the property that makes this
-extension easy to trust: it executes no code of its own on your pages, so a
-mistake in a rule can make the page look wrong but cannot read, send, or alter
-anything. Extra CSS is the escape hatch for anything selectors cannot express.
+user-supplied script would give rules direct access to page data, so scripts are
+not supported. Extra CSS is available as an advanced escape hatch, but use only
+CSS you trust: resource declarations such as `url(...)` can initiate network
+requests when the site's security policy allows them.
 
 ## How it works
 
