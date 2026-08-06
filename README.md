@@ -32,11 +32,9 @@ it does, how to load it in `chrome://extensions`, and the known limitations.
 | Prefix | For |
 | --- | --- |
 | `feature/` | new user-facing capability |
-| `fix/` | bug fix |
-| `chore/` | tooling, CI, dependencies — nothing user-facing |
 | `docs/` | documentation only |
 | `refactor/` | internal restructuring, no behaviour change |
-| `issue/` | work tracked by a GitHub issue |
+| `issue/` | actual issue that can be also tracked by GitHub issue |
 
 `NNN` is zero-padded and increments across the whole repo regardless of prefix,
 so branches sort in the order they were started. For `issue/`, use the issue
@@ -44,7 +42,6 @@ number instead of the sequence. Keep the description to four words or fewer.
 
 ```
 feature/001-google-calendar-support
-fix/002-cloud-microsoft-host
 issue/42-all-day-events-unmasked
 ```
 
