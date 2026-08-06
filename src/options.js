@@ -73,14 +73,7 @@ function buildCard(rule) {
   q(".js-keep").value = fromLines(rule.keepVisible);
   q(".js-extra").value = rule.extraCss ?? "";
 
-  const badge = q(".js-verified");
-  // Keep the js- hook in the class list: assigning className wholesale would
-  // drop it and break any later lookup.
-  badge.className = `pill js-verified pill--${rule.verified ? "ok" : "warn"}`;
-  badge.textContent = rule.verified ? "verified" : "unverified";
-  badge.title = rule.verified
-    ? "These selectors have been checked against the live site."
-    : "Nobody has confirmed these selectors match. Use Test below.";
+  refreshVerified(card);
 
   q(".js-enabled").addEventListener("change", (e) => {
     rule.enabled = e.target.checked;
@@ -93,6 +86,7 @@ function buildCard(rule) {
   q(".js-matches").addEventListener("input", (e) => {
     rule.matches = toLines(e.target.value);
     markDirty();
+    clearVerified(card);
     refreshPermission(card);
   });
 
@@ -104,6 +98,7 @@ function buildCard(rule) {
     q(selector).addEventListener("input", (e) => {
       apply(e.target.value);
       markDirty();
+      clearVerified(card);
       refreshCssPreview(card);
     });
   }
@@ -119,6 +114,29 @@ function buildCard(rule) {
   refreshCssPreview(card);
   refreshPermission(card);
   return card;
+}
+
+function refreshVerified(card) {
+  const rule = card._rule;
+  const badge = card.querySelector(".js-verified");
+  // Keep the js- hook in the class list: assigning className wholesale would
+  // drop it and break any later lookup.
+  badge.className = `pill js-verified pill--${rule.verified ? "ok" : "warn"}`;
+  badge.textContent = rule.verified ? "verified" : "unverified";
+  badge.title = rule.verified
+    ? "These selectors have been checked against the live site."
+    : "Nobody has confirmed these selectors match. Use Test below.";
+}
+
+/**
+ * A "verified" badge only means something for the selectors it was granted for.
+ * Once the user edits anything that changes what gets masked, nobody has checked
+ * the result, so the claim is withdrawn straight away.
+ */
+function clearVerified(card) {
+  if (!card._rule.verified) return;
+  card._rule.verified = false;
+  refreshVerified(card);
 }
 
 function refreshCssPreview(card) {
