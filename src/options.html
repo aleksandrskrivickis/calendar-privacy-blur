@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Calendar Privacy Blur — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <header class="page-header">
+      <img src="icons/icon48.png" alt="" width="32" height="32" class="page-header__mark" />
+      <div>
+        <h1>Calendar Privacy Blur</h1>
+        <p class="page-header__sub">
+          Choose which sites are masked, and which parts of them.
+        </p>
+      </div>
+    </header>
+
+    <section class="panel">
+      <label class="master" for="master-toggle">
+        <span class="master__text">
+          <span class="master__label">Masking enabled</span>
+          <span class="master__hint" id="master-hint">
+            The same switch as clicking the toolbar icon.
+          </span>
+        </span>
+        <input type="checkbox" id="master-toggle" role="switch" class="switch__input" />
+        <span class="switch__track" aria-hidden="true"><span class="switch__thumb"></span></span>
+      </label>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Services</h2>
+        <div class="add-row">
+          <label class="visually-hidden" for="preset-picker">Template</label>
+          <select id="preset-picker"></select>
+          <button type="button" id="add-service" class="btn">Add service</button>
+        </div>
+      </div>
+
+      <div id="services"></div>
+      <p class="empty" id="empty-state" hidden>
+        No services yet. Add one above to start masking a site.
+      </p>
+    </section>
+
+    <div class="actionbar">
+      <div class="actionbar__status" id="status" role="status" aria-live="polite"></div>
+      <button type="button" id="reset" class="btn btn--quiet">Reset to defaults</button>
+      <button type="button" id="save" class="btn btn--primary">Save changes</button>
+    </div>
+
+    <template id="service-template">
+      <article class="service">
+        <header class="service__head">
+          <label class="service__enable">
+            <input type="checkbox" class="js-enabled" />
+            <span class="visually-hidden">Service enabled</span>
+          </label>
+          <input type="text" class="service__name js-name" aria-label="Service name" />
+          <span class="pill js-verified"></span>
+          <button type="button" class="btn btn--danger js-remove">Remove</button>
+        </header>
+
+        <div class="service__grid">
+          <label class="field">
+            <span class="field__label">URLs</span>
+            <span class="field__hint">
+              One Chrome match pattern per line, <code>http</code> or
+              <code>https</code> only, e.g.
+              <code>https://calendar.example.com/*</code>
+            </span>
+            <textarea class="js-matches" rows="4" spellcheck="false"></textarea>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Mask these elements</span>
+            <span class="field__hint">
+              CSS selectors, one per line. The element's text and all text inside
+              it is hidden.
+            </span>
+            <textarea class="js-mask" rows="4" spellcheck="false"></textarea>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Keep visible inside them</span>
+            <span class="field__hint">
+              Icons and glyphs that should stay readable, e.g. <code>svg</code>.
+            </span>
+            <textarea class="js-keep" rows="3" spellcheck="false"></textarea>
+          </label>
+
+          <details class="field field--wide">
+            <summary>Extra CSS (advanced)</summary>
+            <span class="field__hint">
+              Appended verbatim to this service's stylesheet. Styling only — no
+              scripts, and no <code>url()</code>, <code>image-set()</code> or
+              <code>@import</code>, so it cannot fetch anything.
+            </span>
+            <textarea class="js-extra" rows="4" spellcheck="false"></textarea>
+          </details>
+        </div>
+
+        <footer class="service__foot">
+          <div class="service__perm js-perm"></div>
+          <button type="button" class="btn btn--quiet js-test">Test on an open tab</button>
+          <details class="service__css">
+            <summary>Generated CSS</summary>
+            <pre class="js-css"></pre>
+          </details>
+        </footer>
+
+        <p class="service__errors js-errors" hidden></p>
+      </article>
+    </template>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

@@ -4,8 +4,10 @@
     <meta charset="utf-8" />
     <title>Calendar Privacy Blur — selector fixture</title>
 
-    <!-- The real stylesheet, loaded exactly as shipped. -->
-    <link rel="stylesheet" href="../src/hide-events.css" />
+    <!-- The stylesheet is generated from the shipped rule, not a static file:
+         selector-fixture.js imports src/rules.js, builds the Outlook Web
+         service's CSS exactly as the extension would, and injects it before
+         asserting. One source of truth for the selectors. -->
 
     <style>
       body { font: 13px system-ui, sans-serif; margin: 20px; color: #1b1c1e; }
@@ -23,7 +25,7 @@
     <h1 style="font-size: 15px">Selector fixture</h1>
     <p>
       Reproduces the ARIA structure Calendar Privacy Blur depends on, so the
-      scoped selector in <code>hide-events.css</code> can be checked against a
+      scoped selector in <code>src/rules.js</code> can be checked against a
       real browser engine without an Outlook account. Re-run this after any
       selector change — see “Known limitations” in the extension README.
     </p>
@@ -149,6 +151,6 @@
       <tbody></tbody>
     </table>
 
-    <script src="selector-fixture.js"></script>
+    <script type="module" src="selector-fixture.js"></script>
   </body>
 </html>

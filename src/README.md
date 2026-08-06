@@ -1,8 +1,12 @@
 # Calendar Privacy Blur for Outlook Web
 
-Masks the text of calendar events on Outlook Web so your meeting titles stay
-private while you share your screen. Icons stay visible, layout stays intact,
-and one click on the toolbar icon turns it off again.
+Masks the text of calendar events so your meeting titles stay private while you
+share your screen. Icons stay visible, layout stays intact, and one click on the
+toolbar icon turns it off again.
+
+Outlook Web works out of the box. Other sites can be added in **Settings**
+(right-click the toolbar icon → Options), where you choose the URLs and the
+elements to mask.
 
 Unofficial and not affiliated with Microsoft. "Outlook" appears here only to
 describe which site the extension works on.
@@ -40,6 +44,7 @@ switch it off or read the underlying page.
 5. Click the extension icon to toggle. There is no popup — one click flips it,
    and the change applies to every open calendar tab immediately, with no
    reload.
+6. **Right-click** the icon and choose **Options** for settings.
 
 If a calendar tab was already open *before* you loaded the extension, give it a
 reload the first time. Chrome does not inject content scripts into pages that
@@ -53,25 +58,65 @@ confirm the state at a glance before starting a screen share.
 - **No network requests.** The extension has no remote code, no analytics, no
   fetch/XHR of any kind. You can confirm this in DevTools → Network while
   toggling.
-- **No data collection.** The only thing ever written is a single boolean,
-  `blurEnabled`, in `chrome.storage.local`. It never leaves the browser.
+- **No data collection.** The only things ever written are your on/off flag and
+  your list of services, in `chrome.storage.local`. Neither leaves the browser.
 - **No page reading.** The content script sends one message — "a calendar
   document is live here" — and never inspects or extracts page content.
-- **Permissions.** `storage` for the toggle, `scripting` to add and remove the
+- **Permissions.** `storage` for settings, `scripting` to add and remove the
   stylesheet, and host access limited to the four Outlook Web calendar paths.
-  Chrome shows no warnings beyond those hosts.
+  Any other site you add in settings asks for its own permission at that point,
+  and you can revoke it from `chrome://extensions` at any time.
+
+## Settings
+
+**Right-click the toolbar icon → Options.** From there you can:
+
+- turn masking on or off (the same switch as left-clicking the icon);
+- enable, disable, edit or remove each **service**;
+- set the **URLs** a service covers, as Chrome match patterns;
+- set which **elements** get masked, and which stay visible, as CSS selectors;
+- add extra CSS for a service, if selectors alone are not enough.
+
+Two things in there are worth knowing about.
+
+**"Test on an open tab"** counts what your selectors actually hit on a live page.
+Use it. A selector that matches nothing looks exactly like an extension that is
+working fine, right up until someone shares their screen — that silent failure is
+the main hazard of this whole design, and the test button is the antidote.
+
+**The "unverified" badge is meant literally.** Only the Outlook Web service has
+been checked against the real site. The Google Calendar template is a starting
+point, not a promise.
+
+### Why selectors and not scripts
+
+Settings take CSS selectors and CSS, never JavaScript. Masking text is a styling
+problem, and every case worth covering is reachable with a selector. Running
+user-supplied script would give rules direct access to page data, so scripts are
+not supported. Extra CSS is available as an advanced escape hatch, and it is
+rejected if it can fetch anything — `url(...)`, `image-set(...)`, `src(...)` and
+`@import` are refused — so a rule still cannot send a request from your page.
 
 ## How it works
 
 | File | Role |
 | --- | --- |
-| `hide-events.css` | The mask. Never injected statically — see below. |
+| `rules.js` | The rule model: default services, CSS generation, URL matching, validation. Shared by the worker and the settings page. |
 | `background.js` | Service worker. Owns all injection decisions, and flips the flag when the toolbar icon is clicked. |
-| `content.js` | Tells the worker when a calendar document is live. |
+| `content.js` | Tells the worker when a matching document is live. |
+| `options.*` | The settings page. Writes rules; never injects anything itself. |
 
 There is no popup: clicking the toolbar icon toggles the mask directly.
 `chrome.action.onClicked` only fires when no `default_popup` is declared, so the
-two are mutually exclusive.
+two are mutually exclusive. Right-clicking gives Chrome's own **Options** entry,
+which is where the settings page lives.
+
+Stylesheets are generated from the rules rather than shipped as a static file, so
+there is one source of truth for the selectors. The exact CSS injected into each
+tab is recorded in `chrome.storage.session` — not a plain `Map` — because the
+service worker can be torn down at any moment, and `removeCSS` will only remove a
+stylesheet if it is handed back the identical text. A forgotten string would mean
+a stale mask that nothing can lift.
 
 The stylesheet is applied with `chrome.scripting.insertCSS` and removed with
 `removeCSS`, rather than being declared as a static `content_scripts.css` entry.
@@ -112,8 +157,8 @@ cannot simply target `[role="button"][aria-label]` the way the original console
 snippet did — that blanks the whole UI. Instead it requires an event to sit
 inside a calendar *data surface* (`grid`, `table`, `listbox`, or a container
 whose `data-app-section` names it as calendar content) and excludes anything
-descending from an app-chrome role. Both lists are in the tuning block at the top
-of `hide-events.css`.
+descending from an app-chrome role. Both lists are in the `outlook-web` preset at
+the top of `rules.js`, and are editable per service in settings.
 
 If a future Outlook update breaks it, the two symptoms and their fixes are:
 
@@ -144,9 +189,13 @@ selector.** Microsoft is migrating Outlook Web to `outlook.cloud.microsoft`;
 `outlook.office.com` now redirects there for migrated accounts. A host that is
 not in `host_permissions` gets no injection at all, so the mask just stops
 working — with no error anywhere, because the extension is never invoked. If
-masking stops, check the address bar first: if the domain is not one of the four
-listed above, add it to `host_permissions` *and* `content_scripts.matches` in
-`manifest.json`, and to `CALENDAR_MATCHES` / `CALENDAR_URL` in `background.js`.
+masking stops, check the address bar first.
+
+Since v1.1.0 you can fix this yourself without touching code: open settings, add
+the new domain to the Outlook service's URL list, and click **Grant access**. To
+make it a shipped default instead, add it to `host_permissions` *and*
+`content_scripts.matches` in `manifest.json`, and to the `outlook-web` preset's
+`matches` in `rules.js`.
 
 Other limitations:
 
@@ -154,8 +203,9 @@ Other limitations:
   event still reveals its full details. The mask covers the calendar grid only.
 - **Browser vs. Outlook theme.** The smudge and icon colours follow the
   *browser's* light/dark setting via `CanvasText`. If you run Outlook's dark
-  theme inside a light-scheme browser, set `--cpb-icon-color` and
-  `--cpb-smudge-color` explicitly at the top of `hide-events.css`.
+  theme inside a light-scheme browser, override `--cpb-icon-color` and
+  `--cpb-smudge-color` in a service's **Extra CSS**, or change the `APPEARANCE`
+  block in `rules.js`.
 - **Text is masked, not deleted.** It remains in the DOM and can be selected and
   copied. This protects against onlookers, not against someone at the keyboard.
 

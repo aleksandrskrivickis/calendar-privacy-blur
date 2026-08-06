@@ -1,8 +1,19 @@
 /**
- * Drives tools/selector-fixture.html: asserts which elements hide-events.css
- * masks and which it must leave alone. Results land in the on-page table and on
- * `window.__cpbResults` for automated checks.
+ * Drives tools/selector-fixture.html: asserts which elements the shipped
+ * Outlook Web rule masks and which it must leave alone. Results land in the
+ * on-page table and on `window.__cpbResults` for automated checks.
+ *
+ * The CSS is built from src/rules.js rather than read from a file, so the
+ * fixture always tests exactly what the extension would inject.
  */
+
+import { PRESETS, buildCss } from "../src/rules.js";
+
+const outlook = PRESETS.find((preset) => preset.id === "outlook-web");
+const style = document.createElement("style");
+style.id = "cpb-generated";
+style.textContent = buildCss(outlook);
+document.head.appendChild(style);
 
 const TRANSPARENT = "rgba(0, 0, 0, 0)";
 

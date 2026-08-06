@@ -16,17 +16,23 @@
  * smaller the window in which titles could paint before the mask lands.
  */
 
-const sync = () => {
+const sync = (type) => {
   // Rejects when no service worker is listening (e.g. mid-update). Nothing to
   // do about it, and an unhandled rejection would show up in the page console.
-  chrome.runtime.sendMessage({ type: "cpb:sync" }).catch(() => {});
+  chrome.runtime.sendMessage({ type }).catch(() => {});
 };
 
-sync();
+// A fresh document starts with no injected CSS, so the worker must drop its
+// record of what it previously put on this tab.
+sync("cpb:document");
+
+// Same-document route changes keep whatever CSS is already installed; the
+// worker has to reconcile against its existing record, not forget it.
+const routeChanged = () => sync("cpb:route");
 
 if (window.navigation) {
   // Navigation API: fires for the SPA's own history transitions.
-  window.navigation.addEventListener("navigate", sync);
+  window.navigation.addEventListener("navigate", routeChanged);
 } else {
-  window.addEventListener("popstate", sync);
+  window.addEventListener("popstate", routeChanged);
 }
