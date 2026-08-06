@@ -145,23 +145,38 @@ async function applyToTab(tabId, url) {
   if (wanted === current) return;
 
   const target = { tabId, allFrames: false };
+  let inserted = false;
+  let removed = false;
   try {
     // Insert before removing, so a rule edit never opens a gap in which titles
     // would be briefly readable.
     if (wanted) {
       await chrome.scripting.insertCSS({ target, css: wanted, origin: CSS_ORIGIN });
+      inserted = true;
     }
     if (current) {
       await chrome.scripting.removeCSS({ target, css: current, origin: CSS_ORIGIN });
     }
+    removed = true;
     if (wanted) {
       await chrome.storage.session.set({ [tabKey(tabId)]: wanted });
     } else {
       await forgetTab(tabId);
     }
   } catch {
+    // Undo a successful insertion so the page matches whatever the record still
+    // claims; an untracked stylesheet could never be removed again.
+    if (inserted) {
+      try {
+        await chrome.scripting.removeCSS({ target, css: wanted, origin: CSS_ORIGIN });
+      } catch {
+        // Tab gone or already clean; the record below stays authoritative.
+      }
+    }
+    // The old stylesheet is confirmed gone, so the record must not keep
+    // claiming it; otherwise keep it so removal can be retried later.
+    if (removed) await forgetTab(tabId);
     // Re-fires on the next navigation, toggle or settings change.
-    await forgetTab(tabId);
   }
 }
 
