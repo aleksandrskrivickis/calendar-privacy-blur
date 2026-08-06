@@ -355,16 +355,22 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 });
 
 /**
- * The content script reports each fresh document, covering what
- * tabs.onUpdated misses: the extension being enabled while a tab was already
- * open, and in-app route changes that never surface as a tab update.
+ * The content script reports each fresh document and each in-app route change,
+ * covering what tabs.onUpdated misses: the extension being enabled while a tab
+ * was already open, and SPA navigations that never surface as a tab update.
+ *
+ * The two are distinct because a fresh document arrives without the previously
+ * injected CSS (the record has to be dropped), while a same-document route
+ * change keeps it installed (the record has to be kept, so a no-longer-covered
+ * route still gets its stale mask removed).
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message?.type === "cpb:sync" && sender.tab) {
+  if ((message?.type === "cpb:document" || message?.type === "cpb:route") && sender.tab) {
+    const freshDocument = message.type === "cpb:document";
     const tabId = sender.tab.id;
     const url = sender.tab.url ?? sender.url;
     enqueue(async () => {
-      await forgetTab(tabId); // fresh document
+      if (freshDocument) await forgetTab(tabId);
       await applyToTab(tabId, url);
     });
     return false;
