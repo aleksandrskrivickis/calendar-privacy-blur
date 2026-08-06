@@ -315,8 +315,8 @@ chrome.permissions.onRemoved.addListener(() => {
  */
 chrome.action.onClicked.addListener(() => {
   enqueue(async () => {
-    const s = await settings();
-    await chrome.storage.local.set({ blurEnabled: s.blurEnabled === false });
+    const { blurEnabled } = await chrome.storage.local.get({ blurEnabled: true });
+    await chrome.storage.local.set({ blurEnabled: blurEnabled === false });
   });
 });
 
