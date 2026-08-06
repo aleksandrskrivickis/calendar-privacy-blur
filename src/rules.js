@@ -190,18 +190,20 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  *
  * Chrome offers no matcher to extensions, and `chrome.tabs.query({url})` only
  * helps for tabs that already exist — the worker also has to test a single URL
- * on every navigation, so we need our own. Throws on a malformed pattern, which
- * the settings page surfaces as a validation error.
+ * on every navigation, so we need our own. Only `http` and `https` patterns are
+ * accepted, matching the manifest's `optional_host_permissions`. Throws on a
+ * malformed pattern, which the settings page surfaces as a validation error.
  */
 export function matchPatternToRegExp(pattern) {
   const p = String(pattern).trim();
-  if (p === "<all_urls>") return /^(?:https?|file|ftp):\/\/.*$/;
 
-  const m = /^(\*|https?|file|ftp):\/\/([^/]*)(\/.*)$/.exec(p);
-  if (!m) throw new Error(`Not a valid match pattern: "${p}"`);
+  // Only schemes covered by `optional_host_permissions` in the manifest are
+  // configurable: anything else could pass validation but never be granted.
+  const m = /^(\*|https?):\/\/([^/]*)(\/.*)$/.exec(p);
+  if (!m) throw new Error(`Not a valid http or https match pattern: "${p}"`);
   const [, scheme, host, path] = m;
 
-  if (host === "" && scheme !== "file") {
+  if (host === "") {
     throw new Error(`Pattern needs a host: "${p}"`);
   }
   if (host.indexOf("*") > 0 && !host.startsWith("*.")) {
