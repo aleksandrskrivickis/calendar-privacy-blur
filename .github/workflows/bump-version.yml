@@ -1,0 +1,77 @@
+name: Bump extension version
+
+# Runs after a change lands on main, so each shipped build carries its own
+# version. Restricted to src/**: docs and tooling do not ship in the extension
+# and earn no version.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    # Belt and braces. The push below uses the default GITHUB_TOKEN, and GitHub
+    # deliberately does not start new workflow runs from those events, so this
+    # cannot loop. The marker keeps that true if anyone swaps in a PAT later.
+    if: ${{ !contains(github.event.head_commit.message, '[skip bump]') }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Fetch full history so github.event.before is reachable even for
+          # multi-commit pushes.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Skip if the version already changed in this push
+        id: check
+        run: |
+          set -euo pipefail
+          current="$(node -p "require('./src/manifest.json').version")"
+          if previous="$(git show ${{ github.event.before }}:src/manifest.json 2>/dev/null | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")"; then
+            if [ "$current" != "$previous" ]; then
+              echo "Version already went $previous -> $current in this push; leaving it alone."
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          else
+            echo "No readable parent manifest; treating as a normal bump."
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Bump the version
+        id: bump
+        if: steps.check.outputs.skip != 'true'
+        run: node tools/bump-version.mjs
+
+      - name: Commit and push
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/manifest.json
+          if git diff --cached --quiet; then
+            echo "Nothing to commit — manifest unchanged."
+            exit 0
+          fi
+          git commit -m "Bump extension version to ${{ steps.bump.outputs.version }} [skip bump]"
+          # Retry with rebase on non-fast-forward failures caused by concurrent runs.
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push attempt $attempt failed; retrying after rebase onto origin/main..."
+            git fetch origin main
+            git rebase origin/main
+          done
+          echo "::error::Could not push the version bump to main after retries. If main is a protected branch, either allow github-actions[bot] to bypass it, or move this workflow to bump the pull request branch instead (see README)."
+          exit 1
