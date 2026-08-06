@@ -209,7 +209,25 @@ function countMatches(mask, keep) {
         return { selector, count: -1 };
       }
     });
-  return { url: location.href, mask: tally(mask), keep: tally(keep) };
+  const roots = [];
+  for (const selector of mask) {
+    try {
+      roots.push(...document.querySelectorAll(selector));
+    } catch {
+      // Invalid selectors are already represented in the mask tally.
+    }
+  }
+  const keepTally = keep.map((selector) => {
+    try {
+      const count = [...document.querySelectorAll(selector)].filter((node) =>
+        roots.some((root) => root !== node && root.contains(node)),
+      ).length;
+      return { selector, count };
+    } catch {
+      return { selector, count: -1 };
+    }
+  });
+  return { url: location.href, mask: tally(mask), keep: keepTally };
 }
 
 /**
