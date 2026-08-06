@@ -287,8 +287,9 @@ chrome.runtime.onInstalled.addListener(() => {
       // An install that predates a built-in service picks it up here, once.
       // Pass the stored version so only services introduced after it are added.
       const storedVersion = raw.schemaVersion ?? 0;
-      const merged = mergeMissingBuiltins(normalise(raw), storedVersion);
-      await saveSettings(merged ?? { ...normalise(raw), schemaVersion: SCHEMA_VERSION });
+      const normalised = normalise(raw);
+      const merged = mergeMissingBuiltins(normalised, storedVersion);
+      await saveSettings(merged ?? { ...normalised, schemaVersion: SCHEMA_VERSION });
     }
     invalidateCache();
     await syncDynamicContentScripts();
