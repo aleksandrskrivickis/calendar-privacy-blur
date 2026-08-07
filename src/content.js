@@ -1,5 +1,5 @@
 /**
- * Calendar Privacy Blur for Outlook Web — page-side beacon.
+ * Calendar Privacy Blur — page-side beacon.
  *
  * This is the whole content script. It injects nothing and reads nothing from
  * the page; it just tells the service worker "a calendar document is live

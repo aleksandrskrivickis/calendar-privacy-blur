@@ -278,17 +278,21 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  *
  * Chrome offers no matcher to extensions, and `chrome.tabs.query({url})` only
  * helps for tabs that already exist — the worker also has to test a single URL
- * on every navigation, so we need our own. Only `http` and `https` patterns are
- * accepted, matching the manifest's `optional_host_permissions`. Throws on a
- * malformed pattern, which the settings page surfaces as a validation error.
+ * on every navigation, so we need our own. Throws on a malformed pattern, which
+ * the settings page surfaces as a validation error.
+ *
+ * https only. The manifest grants optional host access to https origins and
+ * nothing else, so an http or scheme-wildcard pattern could pass validation here
+ * and then never be granted — the user would add a site, see no error, and get
+ * no masking. Rejecting it up front turns that silent dead end into a message.
+ * Narrowing to https also keeps the permission the Chrome Web Store reviews as
+ * small as the feature allows.
  */
 export function matchPatternToRegExp(pattern) {
   const p = String(pattern).trim();
 
-  // Only schemes covered by `optional_host_permissions` in the manifest are
-  // configurable: anything else could pass validation but never be granted.
-  const m = /^(\*|https?):\/\/([^/]*)(\/.*)$/.exec(p);
-  if (!m) throw new Error(`Not a valid http or https match pattern: "${p}"`);
+  const m = /^(https):\/\/([^/]*)(\/.*)$/.exec(p);
+  if (!m) throw new Error(`Not a valid https match pattern: "${p}"`);
   const [, scheme, host, path] = m;
 
   if (host === "") {
@@ -298,7 +302,7 @@ export function matchPatternToRegExp(pattern) {
     throw new Error(`"*" may only lead the host, as in *.example.com: "${p}"`);
   }
 
-  const schemeRe = scheme === "*" ? "https?" : scheme;
+  const schemeRe = scheme;
   let hostRe;
   if (host === "*") hostRe = "[^/]+";
   else if (host.startsWith("*.")) hostRe = `(?:[^/]+\\.)?${escapeRe(host.slice(2))}`;
