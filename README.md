@@ -127,8 +127,8 @@ Paste-ready answers for the dashboard's **Privacy practices** tab:
 | Optional `https` hosts | Requested only when a user adds their own site in settings, granted per-site by the user, and revocable from `chrome://extensions`. |
 
 Data disclosures are straightforward: the extension collects nothing, makes no
-network requests, and contains no remote code — verifiable by grepping `src/`
-for `fetch`, `XMLHttpRequest`, `eval` and `innerHTML`, all of which are absent.
+network requests, and contains no remote code. Searches of `src/` find no calls
+to `fetch`, `XMLHttpRequest` or `eval`, and no assignments to `innerHTML`.
 
 ## License
 
