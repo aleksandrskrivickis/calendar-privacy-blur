@@ -62,4 +62,5 @@ jobs:
         run: |
           gh release create "v${{ steps.bump.outputs.version }}" \
             "dist/calendar-privacy-blur-${{ steps.bump.outputs.version }}.zip" \
+            --target "$(git rev-parse HEAD)" \
             --generate-notes
