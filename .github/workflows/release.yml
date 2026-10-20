@@ -48,7 +48,6 @@ jobs:
           name="calendar-privacy-blur-${{ steps.bump.outputs.version }}.zip"
           mkdir -p dist/pkg
           cp -r src/. dist/pkg/
-          rm -f dist/pkg/README.md
           (cd dist/pkg && zip -qr "../$name" .)
 
           # manifest.json not at the archive root is the most common store
