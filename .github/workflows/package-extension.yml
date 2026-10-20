@@ -2,19 +2,23 @@ name: Package extension
 
 # Builds the zip that gets uploaded to the Chrome Web Store.
 #
-# Deliberately NOT triggered on push to main. The version-bump workflow pushes
-# its commit with the default GITHUB_TOKEN, and GitHub does not start workflow
-# runs from those events — so a push-triggered build would run on the merge
-# commit, before the bump lands, and produce an artefact stamped with the
-# previous version. Releases avoid that, and release assets are permanent and
-# linkable where Actions artefacts expire after 90 days.
+# Called by release.yml as part of the same run rather than triggered by
+# `release: published`. That event never fires for a release created with the
+# default GITHUB_TOKEN, so relying on it would leave every automatic release
+# without its artefact — and silently, which is the failure mode this project
+# keeps running into.
 on:
   workflow_dispatch:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      release-tag:
+        description: Attach the zip to this release. Omit to only upload an artefact.
+        type: string
+        required: false
+        default: ""
 
 permissions:
-  contents: write # only to attach the asset to a release
+  contents: write
 
 jobs:
   package:
@@ -61,7 +65,7 @@ jobs:
           if-no-files-found: error
 
       - name: Attach to the release
-        if: github.event_name == 'release'
+        if: inputs.release-tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" "dist/${{ steps.build.outputs.name }}" --clobber
+        run: gh release upload "${{ inputs.release-tag }}" "dist/${{ steps.build.outputs.name }}" --clobber

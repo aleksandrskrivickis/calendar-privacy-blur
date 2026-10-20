@@ -49,40 +49,51 @@ Take the next number from the [closed pull requests](../../pulls?q=is:pr+is:clos
 — each merged branch's number is recorded there. Branches created before this
 convention keep their names and don't count toward the sequence.
 
-### Automatic version bumping
+### Versioning and releases
 
-Handled by GitHub Actions — see
-[`.github/workflows/bump-version.yml`](.github/workflows/bump-version.yml).
-**Nothing to install or configure locally.**
+Four workflows, none of which push to `main`. Versioning happens in the pull
+request, where it is visible in review; `main` only ever reacts to what has
+already landed.
 
-When a change lands on `main` that touches `src/`, the workflow bumps the patch
-version in `src/manifest.json` and pushes that back to `main`. Chrome refuses an
-upload that reuses a version, and `chrome://extensions` shows the version of an
-unpacked build — so a distinct version per shipped change makes "which build am
-I actually running?" answerable at a glance.
+| Workflow | Fires on | Does |
+| --- | --- | --- |
+| [`bump-version.yml`](.github/workflows/bump-version.yml) | PR opened against `main` touching `src/` | Bumps the patch version on the PR's own branch |
+| [`version-guard.yml`](.github/workflows/version-guard.yml) | Every push to such a PR | Fails unless the version advances past `main` |
+| [`release.yml`](.github/workflows/release.yml) | `src/manifest.json` changing on `main` | Tags, releases, and calls the packager |
+| [`package-extension.yml`](.github/workflows/package-extension.yml) | Called by `release.yml`, or by hand | Builds the store zip and attaches it |
 
-What it does *not* do:
+**Make `Version must advance` a required status check on `main`.** Without it the
+guard protects nothing, and it is the piece that matters most. Two pull requests
+opened against the same base both bump to the same number; when the first merges
+the second still carries that version, and because both sides changed the line to
+the *same* value git merges it with no conflict. The duplicate would reach the
+Chrome Web Store before anyone noticed. The guard turns that into a red X before
+merge.
+
+Chrome refuses an upload that reuses a version, and `chrome://extensions` shows
+the version of an unpacked build — so a distinct version per shipped change makes
+"which build am I actually running?" answerable at a glance.
+
+What the bump does *not* do:
 
 - Changes touching only docs or `tools/` don't bump — they don't ship in the
   extension.
-- A version already changed by hand in the same push is left alone.
-- Its own commit is marked `[skip bump]`, so it cannot loop. (The push uses the
-  default `GITHUB_TOKEN`, and GitHub does not start new workflow runs from those
-  events, so the marker is only insurance against someone swapping in a PAT.)
+- A version the author already moved is left alone.
+- It runs on `opened` and `reopened` only, never `synchronize`, so pushing the
+  bump cannot re-trigger it.
+- Pull requests from forks are skipped, since their token cannot push. The guard
+  still blocks the merge, so the version has to be bumped by hand there.
+
+Releases are idempotent by design: `release.yml` asks whether a release exists
+for the version the manifest *currently* says, not whether this push changed it.
+A re-run therefore heals a half-finished release instead of doing nothing, and
+`workflow_dispatch` is there for exactly that.
 
 To preview a bump locally without changing anything:
 
 ```bash
 node tools/bump-version.mjs --dry-run
 ```
-
-**If `main` is a protected branch**, the workflow's push will be rejected and the
-run will fail with an explicit error rather than quietly doing nothing. Either
-allow `github-actions[bot]` to bypass the protection, or switch the trigger to
-`pull_request` and push to `github.head_ref` so the bump travels in the PR
-instead. Note that with the `pull_request` approach two PRs open at once both
-bump from the same base and collide on merge; bumping on `main` serialises
-naturally, which is why it is the default here.
 
 ### Icons
 

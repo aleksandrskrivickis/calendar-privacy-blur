@@ -1,0 +1,83 @@
+name: Release
+
+# Reacts to a new version arriving on main. It bumps nothing, commits nothing
+# and pushes nothing — the pull request already did that — so there is no
+# rebase retry and no half-applied state to recover from.
+#
+# Triggered on src/manifest.json because that is the only file whose change can
+# mean "new version". A src/ change that does not move the version cannot be
+# released anyway: the store refuses a version it has already seen.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/manifest.json"
+  # Recovers a version whose release failed or was deleted; see the idempotence
+  # note in the plan job.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+      needs-release: ${{ steps.plan.outputs.needs-release }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether this version still needs a release
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./src/manifest.json').version")"
+          tag="v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+          # Asking "does a release exist for the version the manifest currently
+          # says?" rather than "did this push change the version?" is what makes
+          # a re-run heal a partial failure instead of being a no-op.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; it will be re-packaged, not recreated."
+            echo "needs-release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs-release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    needs: plan
+    if: needs.plan.outputs.needs-release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create the tag and release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "${{ needs.plan.outputs.tag }}" \
+            --target "$GITHUB_SHA" \
+            --title "${{ needs.plan.outputs.tag }}" \
+            --generate-notes
+
+  package:
+    needs: [plan, release]
+    # `always()` so a run that found the release already present still attaches
+    # the artefact; without it the skipped release job would skip this too.
+    if: always() && needs.plan.result == 'success' && needs.release.result != 'failure'
+    uses: ./.github/workflows/package-extension.yml
+    permissions:
+      contents: write
+    with:
+      release-tag: ${{ needs.plan.outputs.tag }}

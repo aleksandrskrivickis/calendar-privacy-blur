@@ -1,0 +1,57 @@
+name: Version must advance
+
+# The load-bearing half of PR-based versioning.
+#
+# Two pull requests opened against the same base both bump to the same number.
+# When the first merges, the second still carries that version — and because
+# both sides changed the line to the *same* value, git merges it without a
+# conflict. The duplicate would reach the Chrome Web Store before anyone noticed.
+#
+# This check makes that case a red X before merge instead. Make it a required
+# status check on main, or it protects nothing.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches: [main]
+    paths:
+      - "src/**"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: The manifest version must be greater than main's
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin main
+
+          base="$(git show origin/main:src/manifest.json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")"
+          head="$(node -p "require('./src/manifest.json').version")"
+
+          BASE="$base" HEAD="$head" node -e '
+            const cmp = (a, b) => {
+              const x = a.split(".").map(Number), y = b.split(".").map(Number);
+              for (let i = 0; i < Math.max(x.length, y.length); i++) {
+                const d = (x[i] || 0) - (y[i] || 0);
+                if (d) return d;
+              }
+              return 0;
+            };
+            const base = process.env.BASE, head = process.env.HEAD;
+            if (cmp(head, base) <= 0) {
+              console.log(`::error::src/manifest.json is ${head}, which does not advance past main (${base}). Rebase onto main and bump again.`);
+              process.exit(1);
+            }
+            console.log(`${base} -> ${head}`);
+          '
