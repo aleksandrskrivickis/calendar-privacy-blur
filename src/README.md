@@ -234,14 +234,6 @@ Other limitations:
 - **Text is masked, not deleted.** It remains in the DOM and can be selected and
   copied. This protects against onlookers, not against someone at the keyboard.
 
-## Follow-ups
-
-- **Chrome Web Store submission** is deliberately out of scope here: listing
-  copy, screenshots, a privacy-policy URL and a paid developer account are all
-  still to do. Test locally first.
-- **Firefox / Edge Add-ons** compatibility is untested. The code is close to
-  portable, but MV3 background-script differences will need work.
-
 ## License
 
 GPL-3.0 — see [LICENSE](../LICENSE) in the repository root.
