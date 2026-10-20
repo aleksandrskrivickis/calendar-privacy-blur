@@ -49,40 +49,31 @@ Take the next number from the [closed pull requests](../../pulls?q=is:pr+is:clos
 — each merged branch's number is recorded there. Branches created before this
 convention keep their names and don't count toward the sequence.
 
-### Automatic version bumping
+### Versioning and releases
 
-Handled by GitHub Actions — see
-[`.github/workflows/bump-version.yml`](.github/workflows/bump-version.yml).
-**Nothing to install or configure locally.**
+One workflow, [`release.yml`](.github/workflows/release.yml). When a change
+lands on `main` that touches `src/`, it bumps the patch version in
+`src/manifest.json`, commits it, and publishes a release with the store zip
+attached.
 
-When a change lands on `main` that touches `src/`, the workflow bumps the patch
-version in `src/manifest.json` and pushes that back to `main`. Chrome refuses an
-upload that reuses a version, and `chrome://extensions` shows the version of an
-unpacked build — so a distinct version per shipped change makes "which build am
-I actually running?" answerable at a glance.
+Chrome refuses an upload that reuses a version, and `chrome://extensions` shows
+the version of an unpacked build — so a distinct version per shipped change makes
+"which build am I actually running?" answerable at a glance.
 
-What it does *not* do:
+It runs on `main` rather than in the pull request, which keeps it serialised:
+two merges cannot land on the same version, so nothing has to guard against
+duplicates. Changes touching only docs or `tools/` don't bump, since they
+don't ship in the extension. Its own commit is marked `[skip release]`.
 
-- Changes touching only docs or `tools/` don't bump — they don't ship in the
-  extension.
-- A version already changed by hand in the same push is left alone.
-- Its own commit is marked `[skip bump]`, so it cannot loop. (The push uses the
-  default `GITHUB_TOKEN`, and GitHub does not start new workflow runs from those
-  events, so the marker is only insurance against someone swapping in a PAT.)
+If a run fails partway — version pushed but no release — re-run it from the
+Actions tab. The bump will advance again, which costs nothing but a version
+number.
 
 To preview a bump locally without changing anything:
 
 ```bash
 node tools/bump-version.mjs --dry-run
 ```
-
-**If `main` is a protected branch**, the workflow's push will be rejected and the
-run will fail with an explicit error rather than quietly doing nothing. Either
-allow `github-actions[bot]` to bypass the protection, or switch the trigger to
-`pull_request` and push to `github.head_ref` so the bump travels in the PR
-instead. Note that with the `pull_request` approach two PRs open at once both
-bump from the same base and collide on merge; bumping on `main` serialises
-naturally, which is why it is the default here.
 
 ### Icons
 
