@@ -1,4 +1,4 @@
-# Calendar Privacy Blur for Outlook Web
+# Calendar Privacy Blur
 
 Masks the text of calendar events so your meeting titles stay private while you
 share your screen. Icons stay visible, layout stays intact, and one click on the
@@ -69,6 +69,9 @@ confirm the state at a glance before starting a screen share.
   at any time. If you only use one of the two calendars, disable the other
   service in settings — that stops the extension acting on it, though revoking
   the host permission itself has to be done from `chrome://extensions`.
+- **`https` only.** Sites you add must be `https`; the optional permission the
+  extension can request covers nothing else. An `http://` pattern is rejected in
+  settings with a message rather than accepted and then silently never granted.
 
 ## Settings
 

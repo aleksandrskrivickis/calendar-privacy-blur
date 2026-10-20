@@ -99,6 +99,37 @@ must mask and which it must leave alone. The stylesheet it tests is generated
 from `src/rules.js`, so the fixture always checks what the extension would
 actually inject.
 
+## Publishing to the Chrome Web Store
+
+Two constraints are baked into the code rather than left to the listing.
+
+**The extension is named "Calendar Privacy Blur", with no other company's
+product in it.** Store policy prohibits branding that implies affiliation or
+endorsement. Outlook and Google Calendar are named in the description and in
+this repo, where the use is plainly descriptive — but not in the name.
+
+**Optional host access is `https` only.** Supporting user-added sites needs a
+broad optional permission, and broad permissions get a deeper review. Dropping
+`http` halves that surface for a capability nobody was using: calendars worth
+masking are served over TLS. Settings rejects an `http://` pattern outright
+rather than accepting one that could never be granted.
+
+Paste-ready answers for the dashboard's **Privacy practices** tab:
+
+> **Single purpose.** Visually masks calendar event titles on calendar websites
+> so they cannot be read by onlookers during screen sharing.
+
+| Permission | Justification |
+| --- | --- |
+| `storage` | Stores the on/off toggle and the user's list of configured sites locally. Nothing is transmitted. |
+| `scripting` | Injects and removes the CSS that masks event text, so the toggle applies without a page reload. |
+| Host permissions | Applies the mask on the calendar sites the extension supports out of the box. |
+| Optional `https` hosts | Requested only when a user adds their own site in settings, granted per-site by the user, and revocable from `chrome://extensions`. |
+
+Data disclosures are straightforward: the extension collects nothing, makes no
+network requests, and contains no remote code. Searches of `src/` find no calls
+to `fetch`, `XMLHttpRequest` or `eval`, and no assignments to `innerHTML`.
+
 ## License
 
 GPL-3.0 — see [LICENSE](LICENSE).
