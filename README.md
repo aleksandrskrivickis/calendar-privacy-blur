@@ -51,43 +51,23 @@ convention keep their names and don't count toward the sequence.
 
 ### Versioning and releases
 
-Four workflows, none of which push to `main`. Versioning happens in the pull
-request, where it is visible in review; `main` only ever reacts to what has
-already landed.
-
-| Workflow | Fires on | Does |
-| --- | --- | --- |
-| [`bump-version.yml`](.github/workflows/bump-version.yml) | PR opened against `main` touching `src/` | Bumps the patch version on the PR's own branch |
-| [`version-guard.yml`](.github/workflows/version-guard.yml) | Every push to such a PR | Fails unless the version advances past `main` |
-| [`release.yml`](.github/workflows/release.yml) | `src/manifest.json` changing on `main` | Tags, releases, and calls the packager |
-| [`package-extension.yml`](.github/workflows/package-extension.yml) | Called by `release.yml`, or by hand | Builds the store zip and attaches it |
-
-**Make `Version must advance` a required status check on `main`.** Without it the
-guard protects nothing, and it is the piece that matters most. Two pull requests
-opened against the same base both bump to the same number; when the first merges
-the second still carries that version, and because both sides changed the line to
-the *same* value git merges it with no conflict. The duplicate would reach the
-Chrome Web Store before anyone noticed. The guard turns that into a red X before
-merge.
+One workflow, [`release.yml`](.github/workflows/release.yml). When a change
+lands on `main` that touches `src/`, it bumps the patch version in
+`src/manifest.json`, commits it, and publishes a release with the store zip
+attached.
 
 Chrome refuses an upload that reuses a version, and `chrome://extensions` shows
 the version of an unpacked build — so a distinct version per shipped change makes
 "which build am I actually running?" answerable at a glance.
 
-What the bump does *not* do:
+It runs on `main` rather than in the pull request, which keeps it serialised:
+two merges cannot land on the same version, so nothing has to guard against
+duplicates. Changes touching only docs or `tools/` don't bump, since they
+don't ship in the extension. Its own commit is marked `[skip release]`.
 
-- Changes touching only docs or `tools/` don't bump — they don't ship in the
-  extension.
-- A version the author already moved is left alone.
-- It runs on `opened` and `reopened` only, never `synchronize`, so pushing the
-  bump cannot re-trigger it.
-- Pull requests from forks are skipped, since their token cannot push. The guard
-  still blocks the merge, so the version has to be bumped by hand there.
-
-Releases are idempotent by design: `release.yml` asks whether a release exists
-for the version the manifest *currently* says, not whether this push changed it.
-A re-run therefore heals a half-finished release instead of doing nothing, and
-`workflow_dispatch` is there for exactly that.
+If a run fails partway — version pushed but no release — re-run it from the
+Actions tab. The bump will advance again, which costs nothing but a version
+number.
 
 To preview a bump locally without changing anything:
 
