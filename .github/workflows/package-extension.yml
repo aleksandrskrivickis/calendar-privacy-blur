@@ -1,0 +1,67 @@
+name: Package extension
+
+# Builds the zip that gets uploaded to the Chrome Web Store.
+#
+# Deliberately NOT triggered on push to main. The version-bump workflow pushes
+# its commit with the default GITHUB_TOKEN, and GitHub does not start workflow
+# runs from those events — so a push-triggered build would run on the merge
+# commit, before the bump lands, and produce an artefact stamped with the
+# previous version. Releases avoid that, and release assets are permanent and
+# linkable where Actions artefacts expire after 90 days.
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+permissions:
+  contents: write # only to attach the asset to a release
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the version from the manifest
+        id: manifest
+        run: echo "version=$(node -p "require('./src/manifest.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Build the zip
+        id: build
+        run: |
+          set -euo pipefail
+          name="calendar-privacy-blur-${{ steps.manifest.outputs.version }}.zip"
+
+          # Stage a copy so the exclusion is unambiguous and src/ is untouched.
+          # src/README.md is internal maintenance notes; users never need it.
+          mkdir -p dist/pkg
+          cp -r src/. dist/pkg/
+          rm -f dist/pkg/README.md
+
+          (cd dist/pkg && zip -qr "../$name" .)
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+          # The store rejects an archive whose manifest is not at the root, and
+          # that is the most common rejection cause. Fail here instead.
+          unzip -Z1 "dist/$name" | grep -qx 'manifest.json' \
+            || { echo "::error::manifest.json is not at the zip root"; exit 1; }
+
+          # Nothing should ship that is not part of the extension.
+          if unzip -Z1 "dist/$name" | grep -qx 'README.md'; then
+            echo "::error::README.md leaked into the package"; exit 1
+          fi
+
+          echo "Packaged contents:"
+          unzip -Z1 "dist/$name"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.build.outputs.name }}
+          path: dist/${{ steps.build.outputs.name }}
+          if-no-files-found: error
+
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "dist/${{ steps.build.outputs.name }}" --clobber
