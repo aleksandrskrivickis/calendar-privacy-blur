@@ -1,21 +1,24 @@
 <!doctype html>
 <!--
-  Source for the store images. Serve the repo root over HTTP, open this page in
-  Chrome with a 1280x800 viewport and pick the image with the hash:
+  Source for the store images. tools/render-assets.mjs opens this page in
+  headless Chrome at each image's exact size and picks the image with the hash:
 
-    #shot=<name>   a raw/<name>.png screenshot in a dark macOS window (1280x800)
-    #split         week view, extension off on the left and on on the right
-    #promo         440x280 small promo tile, drawn in the centre; crop it out
+    #shot=<name>   a raw/<name>.png capture in a dark macOS window (1280x800)
+    #split         week view, extension off on the left and on on the right (1280x800)
+    #promo         small promo tile (440x280)
+    #marquee       marquee promo tile (1400x560)
 -->
 <html>
 <head>
 <meta charset="utf-8">
 <title>Store asset renderer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=block">
 <style>
   * { box-sizing: border-box; margin: 0; }
-  html, body { width: 1280px; height: 800px; overflow: hidden; background: #131314; cursor: none; }
-  body { font-family: "SF Pro Text", -apple-system, system-ui, sans-serif; }
-  .page { display: none; position: absolute; inset: 0; }
+  html, body { width: 100vw; height: 100vh; overflow: hidden; background: #131314; cursor: none; }
+  body { font-family: Inter, -apple-system, system-ui, sans-serif; }
+  .page { display: none; position: absolute; inset: 0; overflow: hidden; }
   .page.on { display: block; }
 
   /* Desktop behind the window: a dark wallpaper in the icon's indigo. */
@@ -55,21 +58,36 @@
   .label.off { left: 456px; background: #3c4043; }
   .label.on { left: 640px; background: #5b63d3; }
 
-  /* Small promo tile, 440x280, centred so `sips -c 280 440` cuts it out exactly. */
-  #promo { width: 440px; height: 280px; left: 420px; top: 260px; right: auto; bottom: auto; overflow: hidden;
-           background: linear-gradient(135deg, #5b63d3 0%, #3d43a8 100%); color: #fff;
-           font-family: "Google Sans", "SF Pro Display", -apple-system, system-ui, sans-serif; }
-  #promo .brand { position: absolute; left: 28px; top: 28px; display: flex; align-items: center; gap: 14px; }
-  #promo .brand img { width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
-  #promo h1 { font-size: 26px; line-height: 1.1; font-weight: 700; letter-spacing: -.3px; }
+  /* Promo tiles share the brand block and the blurred chips. */
+  .tile { color: #fff; background: linear-gradient(135deg, #5b63d3 0%, #3d43a8 100%); }
+  .brand { position: absolute; display: flex; align-items: center; }
+  .brand img { box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+  .brand h1 { line-height: 1.1; font-weight: 800; letter-spacing: -.02em; }
+  .live { position: absolute; display: flex; align-items: center; gap: 8px; border-radius: 999px;
+          background: rgba(0,0,0,.28); font-weight: 600; }
+  .live i { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; box-shadow: 0 0 0 4px rgba(255,95,87,.3); }
+  .chip { border-radius: 7px; font-weight: 600; color: transparent; text-shadow: 0 0 6px rgba(255,255,255,.75); }
+  .chip.a { background: #8e93ec; } .chip.b { background: #e8c27a; } .chip.c { background: #7fc89a; } .chip.d { background: #ef8f8f; }
+
+  /* Small promo tile, 440x280. Sized explicitly: headless Chrome lays out at
+     least ~500px wide however small the window, then crops the capture. */
+  #promo { right: auto; bottom: auto; width: 440px; height: 280px; }
+  #promo .brand { left: 28px; top: 28px; gap: 14px; }
+  #promo .brand img { width: 56px; height: 56px; border-radius: 14px; }
+  #promo h1 { font-size: 25px; }
   #promo p { position: absolute; left: 28px; top: 102px; width: 230px; font-size: 16px; line-height: 1.35; opacity: .92; }
-  #promo .live { position: absolute; left: 28px; bottom: 28px; display: flex; align-items: center; gap: 8px;
-                 padding: 8px 14px; border-radius: 999px; background: rgba(0,0,0,.28); font-size: 14px; font-weight: 600; }
-  #promo .live i { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; box-shadow: 0 0 0 4px rgba(255,95,87,.3); }
+  #promo .live { left: 28px; bottom: 28px; padding: 8px 14px; font-size: 14px; }
   #promo .chips { position: absolute; right: -14px; top: 96px; width: 172px; display: grid; gap: 10px; }
-  #promo .chip { height: 34px; border-radius: 7px; padding: 9px 12px; font-size: 14px; font-weight: 600;
-                 color: transparent; text-shadow: 0 0 6px rgba(255,255,255,.75); }
-  #promo .a { background: #8e93ec; } #promo .b { background: #e8c27a; } #promo .c { background: #7fc89a; } #promo .d { background: #ef8f8f; }
+  #promo .chip { height: 34px; padding: 9px 12px; font-size: 14px; }
+
+  /* Marquee promo tile, 1400x560: pitch on the left, the product on the right. */
+  #marquee .brand { left: 80px; top: 92px; gap: 22px; }
+  #marquee .brand img { width: 88px; height: 88px; border-radius: 20px; }
+  #marquee h1 { font-size: 46px; }
+  #marquee p { position: absolute; left: 80px; top: 228px; width: 470px; font-size: 26px; line-height: 1.35; opacity: .94; }
+  #marquee .live { left: 80px; top: 360px; padding: 10px 18px; font-size: 17px; }
+  #marquee .works { position: absolute; left: 80px; top: 438px; font-size: 16px; opacity: .7; }
+  #marquee .win { left: 640px; top: 70px; transform-origin: top left; transform: scale(.82); }
 </style>
 </head>
 <body>
@@ -86,7 +104,7 @@
   <section id="shot" class="page desk"></section>
   <section id="split" class="page desk"></section>
 
-  <section id="promo" class="page">
+  <section id="promo" class="page tile">
     <div class="brand">
       <img src="../src/icons/icon128.png" alt="">
       <h1>Calendar<br>Privacy Blur</h1>
@@ -101,26 +119,33 @@
     </div>
   </section>
 
+  <section id="marquee" class="page tile">
+    <div class="brand">
+      <img src="../src/icons/icon128.png" alt="">
+      <h1>Calendar<br>Privacy Blur</h1>
+    </div>
+    <p>Share your screen without sharing your schedule.</p>
+    <div class="live"><i></i>Presenting — event titles hidden</div>
+    <div class="works">Google Calendar · Outlook on the web</div>
+  </section>
+
   <script>
     const framed = (page) => {
-      page.replaceChildren(document.getElementById("window").content.cloneNode(true));
+      page.append(document.getElementById("window").content.cloneNode(true));
       return page.querySelector(".view");
     };
     const img = (src, cls) => Object.assign(document.createElement("img"), { src, className: cls ?? "" });
 
-    const render = () => {
-      const [name, arg] = location.hash.slice(1).split("=");
-      document.querySelectorAll(".page").forEach((p) => p.classList.toggle("on", p.id === name));
-      if (name === "shot") framed(document.getElementById("shot")).append(img(`raw/${arg}.png`));
-      if (name === "split") {
-        const view = framed(document.getElementById("split"));
-        view.append(img("raw/03-week-unmasked.png"), img("raw/02-week-masked.png", "after"));
-        view.insertAdjacentHTML("beforeend",
-          '<div class="divider"></div><div class="label off">Off</div><div class="label on">On</div>');
-      }
-    };
-    addEventListener("hashchange", render);
-    render();
+    const [name, arg] = location.hash.slice(1).split("=");
+    document.getElementById(name)?.classList.add("on");
+    if (name === "shot") framed(document.getElementById("shot")).append(img(`raw/${arg}.png`));
+    if (name === "split") {
+      const view = framed(document.getElementById("split"));
+      view.append(img("raw/03-week-unmasked.png"), img("raw/02-week-masked.png", "after"));
+      view.insertAdjacentHTML("beforeend",
+        '<div class="divider"></div><div class="label off">Off</div><div class="label on">On</div>');
+    }
+    if (name === "marquee") framed(document.getElementById("marquee")).append(img("raw/02-week-masked.png"));
   </script>
 </body>
 </html>

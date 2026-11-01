@@ -12,6 +12,7 @@ zip is built from `src/` only.
 | `screenshots/04-month-masked.png` | Screenshot 4 | 1280×800 |
 | `screenshots/05-month-unmasked.png` | Screenshot 5 | 1280×800 |
 | `promo-small-440x280.png` | Small promo tile | 440×280 |
+| `promo-marquee-1400x560.png` | Marquee promo tile | 1400×560 |
 
 `raw/` holds the unframed captures the screenshots are built from.
 
@@ -22,12 +23,14 @@ calendar name and the account avatar rewritten in the page before capture, so
 nothing in them is real data. The masked versions apply the same CSS that
 `buildCss()` in `src/rules.js` generates for the Google Calendar rule.
 
-Everything in `screenshots/` and the promo tile is rendered from `render.html`,
-which puts a raw capture in a dark macOS window. Serve the repo root over HTTP,
-open `assets/render.html` in a 1280×800 viewport with one of these hashes, and
-screenshot it:
+Everything except `raw/` is generated. `render.html` lays out each image (a
+raw capture in a dark macOS window, the before/after split, the two promo
+tiles) and `tools/render-assets.mjs` captures it with headless Chrome at the
+exact store size, as a 24-bit PNG with no alpha channel:
 
-- `#shot=02-week-masked` (any name from `raw/`)
-- `#split` for the before/after image
-- `#promo` for the promo tile, drawn in the centre so `sips -c 280 440` crops it
-  out exactly
+    node tools/render-assets.mjs
+
+The **Render store assets** workflow runs the same script on every push to a
+branch other than `main` that touches `raw/`, `render.html`, the script or the
+icon, and commits the results to that branch. To change a screenshot, replace
+its file in `raw/` (any 1280×800 PNG) and push; to add one, add a new file there.
