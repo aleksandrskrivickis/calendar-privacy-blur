@@ -1,6 +1,6 @@
 # Chrome Web Store assets
 
-Images for the store listing. Not part of the extension package: the release
+Images for the store listing ([LISTING.md](LISTING.md) has every field). Not part of the extension package: the release
 zip is built from `src/` only.
 
 | File | Store slot | Size |

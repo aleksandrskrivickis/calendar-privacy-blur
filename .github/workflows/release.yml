@@ -59,19 +59,13 @@ jobs:
 
       # Everything the store's listing page asks for, next to the package it
       # describes. The images are already rendered and committed by the branch
-      # that merged; the listing text comes from the marked sections of the
-      # README, so there is one copy of it to keep current.
+      # that merged. Keeps assets/'s layout, so LISTING.md's image links work
+      # inside the zip.
       - name: Build the store assets zip
         run: |
           set -euo pipefail
           name="calendar-privacy-blur-${{ steps.bump.outputs.version }}-store-assets.zip"
-          out=dist/store-assets
-          mkdir -p "$out/screenshots"
-          cp assets/icon-128.png assets/promo-*.png "$out/"
-          cp assets/screenshots/*.png "$out/screenshots/"
-          sed -n '/<!-- listing -->/,/<!-- \/listing -->/{/<!-- \/\{0,1\}listing -->/!p;}' README.md > "$out/listing.md"
-          [ -s "$out/listing.md" ] || { echo "::error::no <!-- listing --> sections in README.md"; exit 1; }
-          (cd "$out" && zip -qr "../$name" .)
+          (cd assets && zip -qr "../dist/$name" LISTING.md icon-128.png promo-*.png screenshots)
 
       - name: Publish the release
         env:
