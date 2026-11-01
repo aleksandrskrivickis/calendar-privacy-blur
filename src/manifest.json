@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Calendar(s) Privacy Blur",
+  "name": "Calendar(s) privacy blur",
   "version": "1.1.4",
   "description": "One click blurs event titles in Google Calendar, Outlook on the web and other calendars. Not affiliated with Microsoft or Google.",
   "minimum_chrome_version": "111",
@@ -43,7 +43,7 @@
     "open_in_tab": true
   },
   "action": {
-    "default_title": "Calendar(s) Privacy Blur",
+    "default_title": "Calendar(s) privacy blur",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
