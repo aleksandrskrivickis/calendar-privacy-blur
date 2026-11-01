@@ -1,5 +1,5 @@
 /**
- * Calendar Privacy Blur — service worker.
+ * Calendar(s) Privacy Blur — service worker.
  *
  * Single responsibility: keep every matching tab's injected CSS in sync with
  * the rules in chrome.storage.local.
@@ -210,8 +210,8 @@ async function reflectState(enabled) {
     await chrome.action.setBadgeBackgroundColor({ color: "#8A8F98" });
     await chrome.action.setTitle({
       title: enabled
-        ? "Calendar Privacy Blur — masking on (right-click for settings)"
-        : "Calendar Privacy Blur — masking off (right-click for settings)",
+        ? "Calendar(s) Privacy Blur — masking on (right-click for settings)"
+        : "Calendar(s) Privacy Blur — masking off (right-click for settings)",
     });
   } catch {
     // Action API unavailable during teardown; re-applied on next wake.
