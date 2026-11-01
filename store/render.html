@@ -1,0 +1,68 @@
+<!doctype html>
+<!--
+  Source for the composite store images. Open in Chrome with a 1280x800
+  viewport and pick the asset with the hash: #hero (1280x800 screenshot) or
+  #promo (440x280 small promo tile, drawn in the centre; crop it out).
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Store asset renderer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 800px; overflow: hidden; background: #131314; }
+  body { font-family: "Google Sans", "SF Pro Display", -apple-system, system-ui, sans-serif; }
+  section { display: none; }
+  :target { display: block; }
+
+  /* Before/after: the same week, extension off on the left, on on the right. */
+  #hero { position: relative; width: 1280px; height: 800px; }
+  #hero img { position: absolute; inset: 0; width: 1280px; height: 800px; }
+  #hero .after { clip-path: inset(0 0 0 732px); }
+  #hero .divider { position: absolute; top: 0; bottom: 0; left: 730px; width: 4px; background: #fff; box-shadow: 0 0 18px rgba(0,0,0,.6); }
+  #hero .label { position: absolute; top: 700px; padding: 10px 18px; border-radius: 999px; font-size: 22px; font-weight: 600; color: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.45); }
+  #hero .off { left: 560px; background: #3c4043; }
+  #hero .on { left: 754px; background: #5b63d3; }
+
+  /* Small promo tile, 440x280. */
+  /* Centred so a plain centre crop (`sips -c 280 440`) cuts it out exactly. */
+  #promo { width: 440px; height: 280px; position: absolute; left: 420px; top: 260px; overflow: hidden;
+           background: linear-gradient(135deg, #5b63d3 0%, #3d43a8 100%); color: #fff; }
+  #promo .brand { position: absolute; left: 28px; top: 28px; display: flex; align-items: center; gap: 14px; }
+  #promo .brand img { width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+  #promo h1 { font-size: 26px; line-height: 1.1; font-weight: 700; letter-spacing: -.3px; }
+  #promo p { position: absolute; left: 28px; top: 102px; width: 230px; font-size: 16px; line-height: 1.35; opacity: .92; }
+  #promo .live { position: absolute; left: 28px; bottom: 28px; display: flex; align-items: center; gap: 8px;
+                 padding: 8px 14px; border-radius: 999px; background: rgba(0,0,0,.28); font-size: 14px; font-weight: 600; }
+  #promo .live i { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; box-shadow: 0 0 0 4px rgba(255,95,87,.3); }
+  #promo .chips { position: absolute; right: -14px; top: 96px; width: 172px; display: grid; gap: 10px; }
+  #promo .chip { height: 34px; border-radius: 7px; padding: 9px 12px; font-size: 14px; font-weight: 600;
+                 color: transparent; text-shadow: 0 0 6px rgba(255,255,255,.75); }
+  #promo .a { background: #8e93ec; } #promo .b { background: #e8c27a; } #promo .c { background: #7fc89a; } #promo .d { background: #ef8f8f; }
+</style>
+</head>
+<body>
+  <section id="hero">
+    <img src="screenshots/03-week-unmasked.png" alt="">
+    <img class="after" src="screenshots/02-week-masked.png" alt="">
+    <div class="divider"></div>
+    <div class="label off">Off</div>
+    <div class="label on">On</div>
+  </section>
+
+  <section id="promo">
+    <div class="brand">
+      <img src="../src/icons/icon128.png" alt="">
+      <h1>Calendar<br>Privacy Blur</h1>
+    </div>
+    <p>Hide event titles while you share your screen.</p>
+    <div class="live"><i></i>Presenting</div>
+    <div class="chips">
+      <div class="chip a">Quarterly review</div>
+      <div class="chip b">Dentist</div>
+      <div class="chip c">1:1 with Jordan</div>
+      <div class="chip d">Flight to Berlin</div>
+    </div>
+  </section>
+</body>
+</html>
