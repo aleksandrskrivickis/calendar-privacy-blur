@@ -65,7 +65,7 @@ jobs:
         run: |
           set -euo pipefail
           name="calendar-privacy-blur-${{ steps.bump.outputs.version }}-store-assets.zip"
-          (cd assets && zip -qr "../dist/$name" LISTING.md icon-128.png promo-*.png screenshots)
+          (cd assets && zip -qr "../dist/$name" LISTING.md README.md icon-128.png promo-*.png screenshots)
 
       - name: Publish the release
         env:
