@@ -13,14 +13,21 @@ zip is built from `src/` only.
 | `screenshots/05-month-unmasked.png` | Screenshot 5 | 1280×800 |
 | `promo-small-440x280.png` | Small promo tile | 440×280 |
 
+`raw/` holds the unframed captures the screenshots are built from.
+
 ## How they were made
 
-The screenshots are a real Google Calendar with every event title, location,
+The raw captures are a real Google Calendar with every event title, location,
 calendar name and the account avatar rewritten in the page before capture, so
 nothing in them is real data. The masked versions apply the same CSS that
 `buildCss()` in `src/rules.js` generates for the Google Calendar rule.
 
-`01-before-after.png` and the promo tile are rendered from `render.html`. Serve
-the repo root over HTTP, open `store/render.html#hero` or `#promo` in a
-1280×800 viewport, and screenshot it. The promo tile is drawn in the centre, so
-`sips -c 280 440` crops it out exactly.
+Everything in `screenshots/` and the promo tile is rendered from `render.html`,
+which puts a raw capture in a dark macOS window. Serve the repo root over HTTP,
+open `assets/render.html` in a 1280×800 viewport with one of these hashes, and
+screenshot it:
+
+- `#shot=02-week-masked` (any name from `raw/`)
+- `#split` for the before/after image
+- `#promo` for the promo tile, drawn in the centre so `sips -c 280 440` crops it
+  out exactly

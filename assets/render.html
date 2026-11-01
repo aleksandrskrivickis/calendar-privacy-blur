@@ -1,0 +1,126 @@
+<!doctype html>
+<!--
+  Source for the store images. Serve the repo root over HTTP, open this page in
+  Chrome with a 1280x800 viewport and pick the image with the hash:
+
+    #shot=<name>   a raw/<name>.png screenshot in a dark macOS window (1280x800)
+    #split         week view, extension off on the left and on on the right
+    #promo         440x280 small promo tile, drawn in the centre; crop it out
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Store asset renderer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 800px; overflow: hidden; background: #131314; cursor: none; }
+  body { font-family: "SF Pro Text", -apple-system, system-ui, sans-serif; }
+  .page { display: none; position: absolute; inset: 0; }
+  .page.on { display: block; }
+
+  /* Desktop behind the window: a dark wallpaper in the icon's indigo. */
+  .desk {
+    background:
+      radial-gradient(900px 600px at 15% 10%, #4a4fc4 0%, transparent 60%),
+      radial-gradient(800px 600px at 95% 100%, #7a3fa0 0%, transparent 55%),
+      linear-gradient(160deg, #1d1f4a 0%, #0e0f22 100%);
+  }
+
+  /* Window: 1088x680 of content (0.85 of the 1280x800 capture) plus title bar. */
+  .win {
+    position: absolute; left: 96px; top: 41px; width: 1088px;
+    border-radius: 12px; overflow: hidden; background: #1f1f1f;
+    box-shadow: 0 0 0 1px rgba(255,255,255,.14), 0 0 0 0.5px #000,
+                0 30px 80px rgba(0,0,0,.55), 0 10px 24px rgba(0,0,0,.35);
+  }
+  .bar { position: relative; height: 38px; background: #2a2a2c; border-bottom: 1px solid #000; }
+  .lights { position: absolute; left: 14px; top: 13px; display: flex; gap: 8px; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.25); }
+  .lights i:nth-child(1) { background: #ff5f57; }
+  .lights i:nth-child(2) { background: #febc2e; }
+  .lights i:nth-child(3) { background: #28c840; }
+  .url {
+    position: absolute; left: 50%; top: 7px; transform: translateX(-50%);
+    width: 360px; height: 24px; border-radius: 6px; background: #1c1c1e;
+    color: #a1a1a6; font-size: 12.5px; line-height: 24px; text-align: center;
+  }
+  .url svg { width: 10px; height: 10px; vertical-align: -1px; margin-right: 5px; fill: #8e8e93; }
+  .view { position: relative; width: 1088px; height: 680px; }
+  .view img { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* Before/after inside the window. */
+  .view .after { clip-path: inset(0 0 0 620px); }
+  .divider { position: absolute; top: 0; bottom: 0; left: 618px; width: 4px; background: #fff; box-shadow: 0 0 16px rgba(0,0,0,.6); }
+  .label { position: absolute; top: 600px; padding: 9px 16px; border-radius: 999px; font-size: 20px; font-weight: 600; color: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.45); }
+  .label.off { left: 456px; background: #3c4043; }
+  .label.on { left: 640px; background: #5b63d3; }
+
+  /* Small promo tile, 440x280, centred so `sips -c 280 440` cuts it out exactly. */
+  #promo { width: 440px; height: 280px; left: 420px; top: 260px; right: auto; bottom: auto; overflow: hidden;
+           background: linear-gradient(135deg, #5b63d3 0%, #3d43a8 100%); color: #fff;
+           font-family: "Google Sans", "SF Pro Display", -apple-system, system-ui, sans-serif; }
+  #promo .brand { position: absolute; left: 28px; top: 28px; display: flex; align-items: center; gap: 14px; }
+  #promo .brand img { width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+  #promo h1 { font-size: 26px; line-height: 1.1; font-weight: 700; letter-spacing: -.3px; }
+  #promo p { position: absolute; left: 28px; top: 102px; width: 230px; font-size: 16px; line-height: 1.35; opacity: .92; }
+  #promo .live { position: absolute; left: 28px; bottom: 28px; display: flex; align-items: center; gap: 8px;
+                 padding: 8px 14px; border-radius: 999px; background: rgba(0,0,0,.28); font-size: 14px; font-weight: 600; }
+  #promo .live i { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; box-shadow: 0 0 0 4px rgba(255,95,87,.3); }
+  #promo .chips { position: absolute; right: -14px; top: 96px; width: 172px; display: grid; gap: 10px; }
+  #promo .chip { height: 34px; border-radius: 7px; padding: 9px 12px; font-size: 14px; font-weight: 600;
+                 color: transparent; text-shadow: 0 0 6px rgba(255,255,255,.75); }
+  #promo .a { background: #8e93ec; } #promo .b { background: #e8c27a; } #promo .c { background: #7fc89a; } #promo .d { background: #ef8f8f; }
+</style>
+</head>
+<body>
+  <template id="window">
+    <div class="win">
+      <div class="bar">
+        <div class="lights"><i></i><i></i><i></i></div>
+        <div class="url"><svg viewBox="0 0 10 12"><path d="M2 5V3.5a3 3 0 0 1 6 0V5h1v7H1V5h1zm1.2 0h3.6V3.5a1.8 1.8 0 0 0-3.6 0V5z"/></svg>calendar.google.com</div>
+      </div>
+      <div class="view"></div>
+    </div>
+  </template>
+
+  <section id="shot" class="page desk"></section>
+  <section id="split" class="page desk"></section>
+
+  <section id="promo" class="page">
+    <div class="brand">
+      <img src="../src/icons/icon128.png" alt="">
+      <h1>Calendar<br>Privacy Blur</h1>
+    </div>
+    <p>Hide event titles while you share your screen.</p>
+    <div class="live"><i></i>Presenting</div>
+    <div class="chips">
+      <div class="chip a">Quarterly review</div>
+      <div class="chip b">Dentist</div>
+      <div class="chip c">1:1 with Jordan</div>
+      <div class="chip d">Flight to Berlin</div>
+    </div>
+  </section>
+
+  <script>
+    const framed = (page) => {
+      page.replaceChildren(document.getElementById("window").content.cloneNode(true));
+      return page.querySelector(".view");
+    };
+    const img = (src, cls) => Object.assign(document.createElement("img"), { src, className: cls ?? "" });
+
+    const render = () => {
+      const [name, arg] = location.hash.slice(1).split("=");
+      document.querySelectorAll(".page").forEach((p) => p.classList.toggle("on", p.id === name));
+      if (name === "shot") framed(document.getElementById("shot")).append(img(`raw/${arg}.png`));
+      if (name === "split") {
+        const view = framed(document.getElementById("split"));
+        view.append(img("raw/03-week-unmasked.png"), img("raw/02-week-masked.png", "after"));
+        view.insertAdjacentHTML("beforeend",
+          '<div class="divider"></div><div class="label off">Off</div><div class="label on">On</div>');
+      }
+    };
+    addEventListener("hashchange", render);
+    render();
+  </script>
+</body>
+</html>
