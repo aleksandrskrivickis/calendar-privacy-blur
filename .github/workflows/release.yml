@@ -1,4 +1,8 @@
 name: Release
+# Without this the Actions list titles each run with the triggering commit's
+# message, which on main is usually "Merge pull request #…". The version is not
+# known until the bump step runs, so the title cannot carry it.
+run-name: ${{ github.event_name == 'workflow_dispatch' && 'Release (manual run)' || 'Release new version' }}
 
 # Bumps the version, commits it, and publishes a release with the store zip and
 # a second zip of the listing's images and text.

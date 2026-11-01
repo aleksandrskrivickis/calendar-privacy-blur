@@ -1,4 +1,6 @@
 name: Render store assets
+# Titles each run by branch instead of the triggering commit's message.
+run-name: Render store assets on ${{ github.ref_name }}
 
 # Re-renders the Chrome Web Store images from the mock pages in assets/mock/
 # and commits them back to the branch, so a pull request always carries images
