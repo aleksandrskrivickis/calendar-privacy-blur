@@ -54,4 +54,4 @@ jobs:
           # A push with the default GITHUB_TOKEN starts no workflow runs, so
           # this commit cannot trigger another render.
           git commit -m "Render store assets"
-          git push origin "HEAD:${{ github.ref_name }}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
