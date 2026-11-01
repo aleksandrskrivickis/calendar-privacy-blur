@@ -1,25 +1,42 @@
-# calendar-privacy-blur
+<p align="center">
+  <img src="assets/promo-marquee-1400x560.png" alt="Calendar(s) privacy blur: share your screen, not your schedule" width="100%">
+</p>
 
-A Manifest V3 Chrome extension that masks calendar event titles on Outlook Web,
-so meeting names stay private while you share your screen.
+# Calendar(s) privacy blur
+
+A Manifest V3 Chrome extension that blurs calendar event titles with one click
+on the toolbar, so you can share your screen without sharing your schedule.
+Google Calendar and Outlook on the web work out of the box; any other web
+calendar can be added in Settings.
 
 Grown out of [a DevTools console snippet][gist] that made event text transparent;
-this repo turns it into a loadable extension with a real on/off toggle, a scoped
-selector that leaves the rest of the Outlook UI alone, and no network access.
+this repo turns it into a loadable extension with a real on/off toggle, scoped
+selectors that leave the rest of the calendar UI alone, and no network access.
 
-Outlook Web and Google Calendar both work out of the box. Right-click the
-toolbar icon → **Options** to
-add other sites, choosing the URLs and the CSS selectors to mask.
+Unofficial, not affiliated with Microsoft or Google.
 
-Unofficial, not affiliated with Microsoft.
+<table>
+  <tr>
+    <td width="50%"><img src="assets/screenshots/01-google-before-after.png" alt="Google Calendar, blur off on the left and on on the right"></td>
+    <td width="50%"><img src="assets/screenshots/03-outlook-before-after.png" alt="Outlook on the web, blur off on the left and on on the right"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Google Calendar</sub></td>
+    <td align="center"><sub>Outlook on the web</sub></td>
+  </tr>
+</table>
 
 ```
-src/     the extension — load this folder unpacked
-tools/   icon generator and the selector test fixture
+src/      the extension — load this folder unpacked
+assets/   Chrome Web Store images, rendered from mock calendars by CI
+tools/    icon generator, asset renderer and the selector test fixture
 ```
 
-**→ [src/README.md](src/README.md)** for what
-it does, how to load it in `chrome://extensions`, and the known limitations.
+**→ [src/README.md](src/README.md)** for what it does, how to load it in
+`chrome://extensions`, and the known limitations.
+
+**→ [assets/LISTING.md](assets/LISTING.md)** for the Chrome Web Store listing:
+every field, the description and the images.
 
 ## Working on it
 
@@ -53,8 +70,9 @@ convention keep their names and don't count toward the sequence.
 
 One workflow, [`release.yml`](.github/workflows/release.yml). When a change
 lands on `main` that touches `src/`, it bumps the patch version in
-`src/manifest.json`, commits it, and publishes a release with the store zip
-attached.
+`src/manifest.json`, commits it, and publishes a release with two zips attached:
+the extension package to upload, and the store assets
+([`assets/LISTING.md`](assets/LISTING.md) with every image it shows).
 
 Chrome refuses an upload that reuses a version, and `chrome://extensions` shows
 the version of an unpacked build — so a distinct version per shipped change makes
@@ -74,6 +92,18 @@ To preview a bump locally without changing anything:
 ```bash
 node tools/bump-version.mjs --dry-run
 ```
+
+### Store assets
+
+The store images are generated from mock calendars running the shipped code,
+and [`render-assets.yml`](.github/workflows/render-assets.yml) commits fresh
+ones to any branch whose push touches `src/` or the mocks. To render locally:
+
+```bash
+node tools/render-assets.mjs
+```
+
+See [assets/README.md](assets/README.md) for how the mocks work.
 
 ### Icons
 

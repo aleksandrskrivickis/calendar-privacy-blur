@@ -1,0 +1,57 @@
+name: Render store assets
+
+# Re-renders the Chrome Web Store images from the mock pages in assets/mock/
+# and commits them back to the branch, so a pull request always carries images
+# that match the code it ships. Any change under src/ counts: the masked views
+# use the shipped rules and the settings shot is the real settings page.
+#
+# Skips main: assets land there by merging a branch this has already run on.
+on:
+  push:
+    branches-ignore: [main]
+    paths:
+      - "src/**"
+      - "assets/mock/**"
+      - "assets/render.html"
+      - "tools/render-assets.mjs"
+      - ".github/workflows/render-assets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# A newer push supersedes a render still in flight on the same branch.
+concurrency:
+  group: render-assets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # The runner image ships Google Chrome, which is all the script needs.
+      - name: Render
+        run: node tools/render-assets.mjs
+
+      - name: Commit the rendered images
+        run: |
+          set -euo pipefail
+          git add assets
+          if git diff --cached --quiet; then
+            echo "Images already match their sources."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # A push with the default GITHUB_TOKEN starts no workflow runs, so
+          # this commit cannot trigger another render.
+          git commit -m "Render store assets"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

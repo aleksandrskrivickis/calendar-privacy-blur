@@ -1,4 +1,4 @@
-# Calendar Privacy Blur
+# Calendar(s) privacy blur
 
 Masks the text of calendar events so your meeting titles stay private while you
 share your screen. Icons stay visible, layout stays intact, and one click on the

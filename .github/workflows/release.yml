@@ -1,6 +1,7 @@
 name: Release
 
-# Bumps the version, commits it, and publishes a release with the store zip.
+# Bumps the version, commits it, and publishes a release with the store zip and
+# a second zip of the listing's images and text.
 #
 # Runs on main rather than in the pull request, which keeps it serialised: two
 # merges cannot produce the same version, so nothing has to guard against that.
@@ -56,11 +57,22 @@ jobs:
           unzip -Z1 "dist/$name" | grep -qx 'manifest.json' \
             || { echo "::error::manifest.json is not at the zip root"; exit 1; }
 
+      # Everything the store's listing page asks for, next to the package it
+      # describes. The images are already rendered and committed by the branch
+      # that merged. Keeps assets/'s layout, so LISTING.md's image links work
+      # inside the zip.
+      - name: Build the store assets zip
+        run: |
+          set -euo pipefail
+          name="calendar-privacy-blur-${{ steps.bump.outputs.version }}-store-assets.zip"
+          (cd assets && zip -qr "../dist/$name" LISTING.md README.md icon-128.png promo-*.png screenshots)
+
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "v${{ steps.bump.outputs.version }}" \
             "dist/calendar-privacy-blur-${{ steps.bump.outputs.version }}.zip" \
+            "dist/calendar-privacy-blur-${{ steps.bump.outputs.version }}-store-assets.zip" \
             --target "$(git rev-parse HEAD)" \
             --generate-notes

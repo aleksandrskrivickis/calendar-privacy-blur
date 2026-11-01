@@ -1,0 +1,202 @@
+<!doctype html>
+<!--
+  A dark Google Calendar week view for store screenshots, 1280x800. Not a copy
+  of Google's markup: it reproduces only the hooks the shipped rule depends on
+  (`[role="main"] [data-eventchip]`), so `?masked` shows the real rule at work.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Google Calendar mock</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Open+Sans:wght@400;500;600&display=block">
+<style>
+  :root { color-scheme: dark; --bg: #1b1b1b; --main: #131314; --line: #2f3033; --fg: #e3e3e3; --muted: #9aa0a6; --accent: #a8c7fa; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 800px; overflow: hidden; background: var(--bg); color: var(--fg);
+               font: 13px "Roboto", system-ui, sans-serif; }
+  svg { width: 22px; height: 22px; fill: none; stroke: #c4c7c5; stroke-width: 1.8; stroke-linecap: round; }
+  .icon-btn { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 50%; }
+
+  header { position: absolute; left: 0; right: 0; top: 0; height: 64px; display: flex; align-items: center; padding: 0 16px 0 12px; gap: 4px; }
+  .logo { display: flex; align-items: center; gap: 10px; margin: 0 38px 0 4px; font: 400 22px "Open Sans", sans-serif; color: #e3e3e3; }
+  .logo b { width: 32px; height: 32px; border-radius: 6px; background: #5f6368; color: #fff; display: grid; place-items: center; font: 600 14px "Roboto"; }
+  .pill { height: 36px; padding: 0 22px; border: 1px solid #8e918f; border-radius: 18px; display: grid; place-items: center; font-weight: 500; font-size: 14px; }
+  .title { font: 400 22px "Open Sans", sans-serif; margin-left: 12px; }
+  .spacer { flex: 1; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #7e57c2; color: #fff; display: grid; place-items: center; font-weight: 500; margin-left: 8px; }
+
+  aside { position: absolute; left: 0; top: 64px; width: 256px; bottom: 0; padding: 8px 16px 0 16px; }
+  .create { width: 136px; height: 56px; border-radius: 16px; background: #37393b; display: flex; align-items: center; gap: 12px; padding: 0 18px; font-weight: 500; font-size: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  .create span { font-size: 28px; font-weight: 300; line-height: 0; }
+  .mini { margin: 26px 0 0 8px; }
+  .mini h3 { font: 500 14px "Open Sans"; margin-bottom: 10px; }
+  .mini table { border-collapse: collapse; font-size: 10.5px; color: #c4c7c5; }
+  .mini td, .mini th { width: 28px; height: 24px; text-align: center; font-weight: 500; }
+  .mini th { color: #9aa0a6; font-weight: 500; }
+  .mini .out { color: #6f7378; }
+  .mini .today span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #062e6f; }
+  .cals { margin: 28px 0 0 8px; }
+  .cals h3 { font: 500 14px "Open Sans"; margin-bottom: 10px; }
+  .cal { display: flex; align-items: center; gap: 14px; height: 30px; font-size: 14px; }
+  .cal i { width: 16px; height: 16px; border-radius: 3px; display: grid; place-items: center; }
+  .cal i::after { content: ""; width: 8px; height: 4px; border: solid #131314; border-width: 0 0 2px 2px; transform: rotate(-45deg) translate(1px, -1px); }
+
+  .rail { position: absolute; right: 0; top: 64px; width: 56px; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 22px; padding-top: 18px; }
+  .rail i { width: 20px; height: 20px; border-radius: 6px; opacity: .9; }
+
+  main { position: absolute; left: 256px; right: 64px; top: 64px; bottom: 8px; background: var(--main); border-radius: 24px; overflow: hidden; }
+  .heads { position: absolute; left: 64px; right: 16px; top: 0; height: 84px; display: grid; grid-template-columns: repeat(7, 1fr); }
+  .head { display: flex; flex-direction: column; align-items: center; padding-top: 12px; border-left: 1px solid transparent; }
+  .head small { font-size: 11px; font-weight: 500; letter-spacing: .8px; color: var(--muted); text-transform: uppercase; }
+  .head b { width: 46px; height: 46px; margin-top: 4px; border-radius: 50%; display: grid; place-items: center; font: 400 26px "Open Sans"; }
+  .head.today small { color: var(--accent); }
+  .head.today b { background: var(--accent); color: #062e6f; }
+  .allday { position: absolute; left: 64px; right: 16px; top: 84px; height: 28px; border-bottom: 1px solid var(--line); }
+  .gmt { position: absolute; left: 14px; top: 90px; font-size: 10px; color: var(--muted); }
+  .grid { position: absolute; left: 64px; right: 16px; top: 112px; bottom: 0; }
+  .hour { position: absolute; left: -64px; right: 0; height: 0; border-top: 1px solid var(--line); }
+  .hour span { position: absolute; left: 12px; top: -8px; font-size: 10px; color: var(--muted); background: var(--main); padding-right: 6px; }
+  .col { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line); }
+  .now { position: absolute; height: 2px; background: #ea4335; z-index: 2; }
+  .now::before { content: ""; position: absolute; left: -6px; top: -5px; width: 12px; height: 12px; border-radius: 50%; background: #ea4335; }
+
+  [data-eventchip] { position: absolute; border-radius: 6px; padding: 3px 7px; overflow: hidden; color: #f1f3f4; font-size: 12px; line-height: 15px; box-shadow: 0 0 0 1px var(--main); }
+  [data-eventchip] .t { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  [data-eventchip] .s { opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .allday [data-eventchip] { top: 4px; height: 20px; padding: 2px 8px; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="icon-btn"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></div>
+    <div class="logo"><b>30</b>Calendar</div>
+    <div class="pill">Today</div>
+    <div class="icon-btn"><svg viewBox="0 0 24 24"><path d="M14 7l-5 5 5 5"/></svg></div>
+    <div class="icon-btn"><svg viewBox="0 0 24 24"><path d="M10 7l5 5-5 5"/></svg></div>
+    <div class="title" id="title"></div>
+    <div class="spacer"></div>
+    <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg></div>
+    <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6M12 17h.01"/></svg></div>
+    <div class="icon-btn"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></div>
+    <div class="pill" style="margin-left:8px">Week &nbsp;▾</div>
+    <div class="icon-btn" style="margin-left:8px"><svg viewBox="0 0 24 24" style="fill:#c4c7c5;stroke:none"><circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/></svg></div>
+    <div class="avatar">A</div>
+  </header>
+
+  <aside>
+    <div class="create"><span>+</span>Create &nbsp;▾</div>
+    <div class="mini"><h3 id="mini-title"></h3><table id="mini"></table></div>
+    <div class="cals">
+      <h3>My calendars</h3>
+      <div class="cal"><i style="background:#7986cb"></i>Work</div>
+      <div class="cal"><i style="background:#33b679"></i>Personal</div>
+      <div class="cal"><i style="background:#e67c73"></i>Family</div>
+      <div class="cal"><i style="background:#f6bf26"></i>Tasks</div>
+      <div class="cal"><i style="background:#8e24aa"></i>Birthdays</div>
+    </div>
+  </aside>
+
+  <div class="rail">
+    <i style="background:#fbbc04"></i><i style="background:#4285f4"></i><i style="background:#34a853"></i>
+  </div>
+
+  <main role="main">
+    <div class="heads" id="heads"></div>
+    <div class="gmt">GMT+00</div>
+    <div class="allday" id="allday"></div>
+    <div class="grid" id="grid"></div>
+  </main>
+
+  <script type="module">
+    import { WEEK, EVENTS, ALL_DAY } from "./events.js";
+    import { applyMask } from "./mask.js";
+
+    const COLORS = { blue: "#4b63c6", grape: "#7a52b3", sage: "#2f7d5b", tomato: "#b8463f",
+                     banana: "#a87e1c", rose: "#a8466f", teal: "#277a80" };
+    const $ = (id) => document.getElementById(id);
+    const fmt = (h) => `${Math.floor(h)}:${String(Math.round((h % 1) * 60)).padStart(2, "0")}`;
+
+    $("title").textContent = WEEK.month;
+    $("mini-title").textContent = WEEK.month;
+
+    // Mini month, Monday first.
+    const first = new Date(2026, 9, 1);
+    const lead = (first.getDay() + 6) % 7;
+    let rows = "<tr>" + ["M", "T", "W", "T", "F", "S", "S"].map((d) => `<th>${d}</th>`).join("") + "</tr>";
+    for (let w = 0; w < 6; w++) {
+      rows += "<tr>";
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(2026, 9, 1 + w * 7 + d - lead);
+        const out = date.getMonth() !== 9;
+        const today = !out && date.getDate() === 30;
+        rows += `<td class="${out ? "out" : ""} ${today ? "today" : ""}"><span>${date.getDate()}</span></td>`;
+      }
+      rows += "</tr>";
+    }
+    $("mini").innerHTML = rows;
+
+    $("heads").innerHTML = WEEK.days.map(([dow, n], i) =>
+      `<div class="head ${i === WEEK.today ? "today" : ""}"><small>${dow}</small><b>${n}</b></div>`).join("");
+
+    const grid = $("grid");
+    const hours = WEEK.lastHour - WEEK.firstHour;
+    // From the CSS box sizes, not measured: layout may not be final this early.
+    const H = (800 - 64 - 8 - 112) / hours;
+    const colW = (1280 - 256 - 64 - 64 - 16) / 7;
+
+    for (let h = WEEK.firstHour; h <= WEEK.lastHour; h++) {
+      const line = document.createElement("div");
+      line.className = "hour";
+      line.style.top = `${(h - WEEK.firstHour) * H}px`;
+      if (h > WEEK.firstHour && h < WEEK.lastHour) line.innerHTML = `<span>${String(h).padStart(2, "0")}:00</span>`;
+      grid.append(line);
+    }
+    for (let d = 0; d < 7; d++) {
+      const col = document.createElement("div");
+      col.className = "col";
+      col.style.left = `${d * colW}px`;
+      col.style.width = `${colW}px`;
+      grid.append(col);
+    }
+    const now = document.createElement("div");
+    now.className = "now";
+    Object.assign(now.style, { left: `${WEEK.today * colW}px`, width: `${colW}px`, top: `${(WEEK.now - WEEK.firstHour) * H}px` });
+    grid.append(now);
+
+    for (const e of EVENTS) {
+      const chip = document.createElement("div");
+      chip.dataset.eventchip = "";
+      chip.setAttribute("role", "button");
+      const short = e.end - e.start <= 0.5;
+      chip.innerHTML = short
+        ? `<div class="t">${e.title}, ${fmt(e.start)}</div>`
+        : `<div class="t">${e.title}</div><div class="s">${fmt(e.start)} – ${fmt(e.end)}</div>` +
+          (e.where && e.end - e.start > 1 ? `<div class="s">${e.where}</div>` : "");
+      Object.assign(chip.style, {
+        background: COLORS[e.color],
+        left: `${(e.day + (e.x ?? 0)) * colW + 2}px`,
+        width: `${colW * (e.w ?? 1) - 8}px`,
+        top: `${(e.start - WEEK.firstHour) * H + 1}px`,
+        height: `${(e.end - e.start) * H - 2}px`,
+      });
+      grid.append(chip);
+    }
+
+    for (const e of ALL_DAY) {
+      const chip = document.createElement("div");
+      chip.dataset.eventchip = "";
+      chip.setAttribute("role", "button");
+      chip.innerHTML = `<div class="t">${e.title}</div>`;
+      Object.assign(chip.style, {
+        background: COLORS[e.color],
+        left: `${e.day * colW + 2}px`,
+        width: `${colW * (e.span ?? 1) - 8}px`,
+      });
+      $("allday").append(chip);
+    }
+
+    applyMask("google-calendar");
+    document.documentElement.dataset.ready = "";
+  </script>
+</body>
+</html>
