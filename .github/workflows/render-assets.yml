@@ -1,17 +1,19 @@
 name: Render store assets
 
-# Re-renders the Chrome Web Store images from assets/raw/ and commits them back
-# to the branch, so a pull request always carries images that match its sources.
+# Re-renders the Chrome Web Store images from the mock pages in assets/mock/
+# and commits them back to the branch, so a pull request always carries images
+# that match the code it ships. Any change under src/ counts: the masked views
+# use the shipped rules and the settings shot is the real settings page.
 #
 # Skips main: assets land there by merging a branch this has already run on.
 on:
   push:
     branches-ignore: [main]
     paths:
-      - "assets/raw/**"
+      - "src/**"
+      - "assets/mock/**"
       - "assets/render.html"
       - "tools/render-assets.mjs"
-      - "src/icons/icon128.png"
       - ".github/workflows/render-assets.yml"
   workflow_dispatch:
 

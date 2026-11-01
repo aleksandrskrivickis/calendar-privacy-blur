@@ -1,0 +1,32 @@
+<!doctype html>
+<!--
+  The real settings page (src/options.html and options.js) outside the
+  extension, for store screenshots. Stubs the few chrome.* calls it makes, then
+  writes the shipped page in place of this one, so what renders is the code
+  that ships with the default settings it starts from.
+-->
+<meta charset="utf-8">
+<script type="module">
+  // Empty storage: getSettings() turns it into the shipped defaults.
+  window.chrome = {
+    storage: {
+      local: { get: async () => ({}), set: async () => {} },
+      onChanged: { addListener() {} },
+    },
+    permissions: { contains: async () => true, request: async () => true },
+    tabs: { query: async () => [] },
+    scripting: { executeScript: async () => [{ result: null }] },
+    runtime: { sendMessage: async () => {}, getManifest: () => ({}) },
+  };
+
+  const html = await (await fetch("../../src/options.html")).text();
+  // The page's own font stack is system-ui, which differs per OS. Inter keeps
+  // renders on macOS and the Linux CI runner identical.
+  const head =
+    '<base href="../../src/">' +
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=block">' +
+    "<style>body, input, select, textarea, button { font-family: Inter, system-ui, sans-serif !important; }</style>";
+  document.open();
+  document.write(html.replace("<head>", `<head>${head}`));
+  document.close();
+</script>

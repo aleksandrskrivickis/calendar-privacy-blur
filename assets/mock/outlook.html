@@ -1,0 +1,252 @@
+<!doctype html>
+<!--
+  A dark Outlook on the web week view for store screenshots, 1280x800. Not a
+  copy of Microsoft's markup: it reproduces only the structure the shipped rule
+  depends on — events as `[role="button"][aria-label]` inside
+  `[data-app-section="calendar-view-…"]`, with toolbars, column headers and the
+  hour gutter that the rule's guard must leave alone — so `?masked` shows the
+  real rule at work.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Outlook mock</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=block">
+<style>
+  :root { color-scheme: dark; --page: #141414; --card: #262626; --line: #383838; --fg: #ffffff; --muted: #adadad; --brand: #479ef5; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 800px; overflow: hidden; background: var(--page); color: var(--fg);
+               font: 13px "Segoe UI", Inter, system-ui, sans-serif; }
+  svg { width: 20px; height: 20px; fill: none; stroke: #d6d6d6; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  [role="button"] { cursor: default; }
+
+  .banner { position: absolute; left: 0; right: 0; top: 0; height: 48px; display: flex; align-items: center; padding: 0 14px; gap: 14px; }
+  .app { font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 12px; }
+  .app i { width: 26px; height: 26px; border-radius: 6px; background: #5f6368; display: grid; place-items: center; font: 700 14px Inter; font-style: normal; color: #fff; }
+  .search { position: absolute; left: 50%; transform: translateX(-50%); width: 460px; height: 32px; border-radius: 6px; background: #2e2e2e;
+            display: flex; align-items: center; gap: 10px; padding: 0 12px; color: var(--muted); }
+  .banner .right { margin-left: auto; display: flex; gap: 16px; align-items: center; }
+  .me { width: 30px; height: 30px; border-radius: 50%; background: #c239b3; display: grid; place-items: center; font-weight: 600; font-size: 12px; }
+
+  .rail { position: absolute; left: 0; top: 48px; bottom: 0; width: 48px; display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 10px; }
+  .rail div { width: 36px; height: 36px; border-radius: 6px; display: grid; place-items: center; }
+  .rail .on { background: #333; box-shadow: inset 3px 0 0 var(--brand); }
+  .rail .on svg { stroke: var(--brand); }
+
+  .ribbon { position: absolute; left: 48px; right: 8px; top: 48px; height: 46px; display: flex; align-items: center; gap: 6px; padding: 0 10px; }
+  .new { height: 32px; padding: 0 14px; border-radius: 6px; background: #115ea3; color: #fff; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .new svg { stroke: #fff; width: 16px; height: 16px; }
+  .sep { width: 1px; height: 22px; background: var(--line); margin: 0 6px; }
+  .rb { height: 32px; padding: 0 10px; border-radius: 6px; display: flex; align-items: center; gap: 7px; color: #e0e0e0; }
+  .rb svg { width: 17px; height: 17px; }
+  .rb.sel { background: #3a3a3a; }
+
+  .pane { position: absolute; left: 48px; top: 96px; width: 228px; bottom: 0; padding: 6px 14px; }
+  .mini h3 { font-size: 13px; font-weight: 600; margin: 4px 0 8px 4px; display: flex; justify-content: space-between; }
+  .mini table { border-collapse: collapse; font-size: 11.5px; }
+  .mini td, .mini th { width: 28px; height: 25px; text-align: center; }
+  .mini th { color: var(--muted); font-weight: 400; }
+  .mini .out { color: #7a7a7a; }
+  .mini .wk td { background: #2e3a4b; }
+  .mini .today span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--brand); color: #0a0a0a; font-weight: 600; }
+  .tree { margin-top: 22px; }
+  .tree h3 { font-size: 13px; font-weight: 600; margin: 0 0 6px 4px; }
+  .cal { display: flex; align-items: center; gap: 10px; height: 30px; padding-left: 6px; font-size: 13px; }
+  .cal i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid; }
+
+  .card { position: absolute; left: 284px; right: 8px; top: 96px; bottom: 8px; background: var(--card); border-radius: 8px; overflow: hidden; }
+  .nav { height: 46px; display: flex; align-items: center; gap: 6px; padding: 0 12px; border-bottom: 1px solid var(--line); }
+  .nav .today { height: 30px; padding: 0 12px; border: 1px solid #5c5c5c; border-radius: 6px; display: grid; place-items: center; font-weight: 600; }
+  .nav h2 { font-size: 16px; font-weight: 600; margin-left: 8px; }
+
+  .header { position: absolute; left: 0; right: 0; top: 46px; height: 82px; border-bottom: 1px solid var(--line); }
+  .colhead { position: absolute; top: 0; height: 52px; padding: 8px 10px; display: flex; align-items: baseline; gap: 6px; }
+  .colhead b { font-size: 22px; font-weight: 400; }
+  .colhead span { color: var(--muted); font-size: 12.5px; }
+  .colhead.today b { color: var(--brand); font-weight: 600; }
+  .colhead.today span { color: var(--brand); }
+  .colhead.today::after { content: ""; position: absolute; left: 6px; right: 6px; top: 0; height: 3px; background: var(--brand); border-radius: 0 0 2px 2px; }
+
+  .body { position: absolute; left: 0; right: 0; top: 128px; bottom: 0; }
+  .hours { position: absolute; left: 0; top: 0; bottom: 0; width: 58px; }
+  .hours div { position: absolute; right: 10px; font-size: 11.5px; color: var(--muted); transform: translateY(-7px); }
+  .line { position: absolute; left: 58px; right: 0; border-top: 1px solid var(--line); }
+  .vcol { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--line); }
+  .now { position: absolute; height: 2px; background: #c50f1f; z-index: 3; }
+  .now::before { content: ""; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: #c50f1f; }
+
+  .ev { position: absolute; border-radius: 4px; padding: 4px 8px 4px 9px; overflow: hidden; font-size: 12px; line-height: 15px;
+        border-left: 4px solid; color: #fff; }
+  .ev .t { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ev .s { color: #e6e6e6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header .ev { top: 54px; height: 22px; padding: 3px 8px; }
+</style>
+</head>
+<body>
+  <div class="banner" role="banner">
+    <div class="app"><svg viewBox="0 0 20 20"><path d="M3 5h14M3 10h14M3 15h14"/></svg><i>✉</i>Outlook</div>
+    <div class="search" role="search"><svg viewBox="0 0 20 20"><circle cx="9" cy="9" r="5.5"/><path d="M13 13l4 4"/></svg>Search</div>
+    <div class="right">
+      <svg viewBox="0 0 20 20"><path d="M10 3a5 5 0 0 0-5 5v3l-1.5 3h13L15 11V8a5 5 0 0 0-5-5zM8 16a2 2 0 0 0 4 0"/></svg>
+      <svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="2.5"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4"/></svg>
+      <div class="me">AM</div>
+    </div>
+  </div>
+
+  <div class="rail" role="navigation">
+    <div role="button" aria-label="Mail"><svg viewBox="0 0 20 20"><rect x="3" y="5" width="14" height="10" rx="2"/><path d="M3.5 6l6.5 5 6.5-5"/></svg></div>
+    <div role="button" aria-label="Calendar" class="on"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2.5v3M13 2.5v3"/></svg></div>
+    <div role="button" aria-label="People"><svg viewBox="0 0 20 20"><circle cx="10" cy="7" r="3"/><path d="M4 17a6 6 0 0 1 12 0"/></svg></div>
+    <div role="button" aria-label="To Do"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="7"/><path d="M7 10l2 2 4-4"/></svg></div>
+  </div>
+
+  <div class="ribbon" role="toolbar">
+    <div class="new" role="button" aria-label="New event"><svg viewBox="0 0 20 20"><path d="M10 4v12M4 10h12"/></svg>New event</div>
+    <div class="sep"></div>
+    <div class="rb" role="button" aria-label="Day"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="13" rx="2"/></svg>Day</div>
+    <div class="rb" role="button" aria-label="Work week"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M8 4v13M12 4v13"/></svg>Work week</div>
+    <div class="rb sel" role="button" aria-label="Week"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M7 4v13M10 4v13M13 4v13"/></svg>Week</div>
+    <div class="rb" role="button" aria-label="Month"><svg viewBox="0 0 20 20"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 9h14M3 13h14"/></svg>Month</div>
+    <div class="sep"></div>
+    <div class="rb" role="button" aria-label="Share"><svg viewBox="0 0 20 20"><path d="M12 4l5 5-5 5M17 9H9a5 5 0 0 0-5 5v1"/></svg>Share</div>
+    <div class="rb" role="button" aria-label="Print"><svg viewBox="0 0 20 20"><path d="M6 7V3h8v4M6 14H4V8h12v6h-2M6 11h8v6H6z"/></svg>Print</div>
+  </div>
+
+  <div class="pane">
+    <div class="mini"><h3><span id="mini-title"></span><span>↑ ↓</span></h3><table id="mini"></table></div>
+    <div class="tree" role="tree">
+      <h3>My calendars</h3>
+      <div class="cal" role="treeitem"><i style="border-color:#4f6bed;background:#4f6bed"></i>Calendar</div>
+      <div class="cal" role="treeitem"><i style="border-color:#8764b8;background:#8764b8"></i>Team</div>
+      <div class="cal" role="treeitem"><i style="border-color:#e3008c;background:#e3008c"></i>Family</div>
+      <div class="cal" role="treeitem"><i style="border-color:#359b5e"></i>Holidays</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="nav" role="toolbar">
+      <div class="today" role="button" aria-label="Go to today">Today</div>
+      <div role="button" aria-label="Previous week"><svg viewBox="0 0 20 20"><path d="M12 5l-5 5 5 5"/></svg></div>
+      <div role="button" aria-label="Next week"><svg viewBox="0 0 20 20"><path d="M8 5l5 5-5 5"/></svg></div>
+      <h2 id="range"></h2>
+    </div>
+    <div class="header" id="header" data-app-section="calendar-view-header-0"></div>
+    <div class="body" id="body" data-app-section="calendar-view-0"><div class="hours" id="hours"></div></div>
+  </div>
+
+  <script type="module">
+    import { WEEK, EVENTS, ALL_DAY } from "./events.js";
+    import { applyMask } from "./mask.js";
+
+    const COLORS = { blue: "#4f6bed", grape: "#8764b8", sage: "#359b5e", tomato: "#d13438",
+                     banana: "#c19c00", rose: "#e3008c", teal: "#038387" };
+    const LONG = { Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday", Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday" };
+    const $ = (id) => document.getElementById(id);
+    const ampm = (h) => {
+      const hh = Math.floor(h), m = Math.round((h % 1) * 60);
+      return `${((hh + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${hh < 12 ? "AM" : "PM"}`;
+    };
+    const tint = (hex) => `color-mix(in srgb, ${hex} 38%, #262626)`;
+
+    $("range").textContent = WEEK.range;
+    $("mini-title").textContent = WEEK.month;
+
+    // Mini month, Sunday first as Outlook shows it.
+    const lead = new Date(2026, 9, 1).getDay();
+    let rows = "<tr>" + ["S", "M", "T", "W", "T", "F", "S"].map((d) => `<th>${d}</th>`).join("") + "</tr>";
+    for (let w = 0; w < 6; w++) {
+      const inWeek = w === 4;
+      rows += `<tr class="${inWeek ? "wk" : ""}">`;
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(2026, 9, 1 + w * 7 + d - lead);
+        const out = date.getMonth() !== 9;
+        const today = !out && date.getDate() === 30;
+        rows += `<td class="${out ? "out" : ""} ${today ? "today" : ""}" role="button" aria-label="${date.toDateString()}"><span>${date.getDate()}</span></td>`;
+      }
+      rows += "</tr>";
+    }
+    $("mini").innerHTML = rows;
+
+    // From the CSS box sizes, not measured: layout may not be final this early.
+    const GUTTER = 58;
+    const cardW = 1280 - 284 - 8;
+    const colW = (cardW - GUTTER) / 7;
+    const hours = WEEK.lastHour - WEEK.firstHour;
+    const H = (800 - 96 - 8 - 128) / hours;
+    const x = (d) => GUTTER + d * colW;
+
+    WEEK.days.forEach(([dow, n], i) => {
+      const head = document.createElement("div");
+      head.className = `colhead ${i === WEEK.today ? "today" : ""}`;
+      head.setAttribute("role", "columnheader");
+      head.setAttribute("aria-label", `${LONG[dow]}, ${n}`);
+      head.innerHTML = `<b>${n}</b><span>${LONG[dow]}</span>`;
+      Object.assign(head.style, { left: `${x(i)}px`, width: `${colW}px` });
+      $("header").append(head);
+    });
+
+    const body = $("body");
+    for (let h = WEEK.firstHour; h <= WEEK.lastHour; h++) {
+      const top = (h - WEEK.firstHour) * H;
+      const line = document.createElement("div");
+      line.className = "line";
+      line.style.top = `${top}px`;
+      body.append(line);
+      if (h > WEEK.firstHour && h < WEEK.lastHour) {
+        const label = document.createElement("div");
+        label.setAttribute("role", "rowheader");
+        label.setAttribute("aria-label", ampm(h));
+        label.textContent = `${((h + 11) % 12) + 1} ${h < 12 ? "AM" : "PM"}`;
+        label.style.top = `${top}px`;
+        $("hours").append(label);
+      }
+    }
+    for (let d = 0; d < 7; d++) {
+      const col = document.createElement("div");
+      col.className = "vcol";
+      Object.assign(col.style, { left: `${x(d)}px`, width: `${colW}px` });
+      body.append(col);
+    }
+    const now = document.createElement("div");
+    now.className = "now";
+    Object.assign(now.style, { left: `${x(WEEK.today)}px`, width: `${colW}px`, top: `${(WEEK.now - WEEK.firstHour) * H}px` });
+    body.append(now);
+
+    const event = (e, label) => {
+      const ev = document.createElement("div");
+      ev.className = "ev";
+      ev.setAttribute("role", "button");
+      ev.setAttribute("aria-label", label);
+      Object.assign(ev.style, { background: tint(COLORS[e.color]), borderLeftColor: COLORS[e.color] });
+      return ev;
+    };
+
+    for (const e of EVENTS) {
+      const ev = event(e, `${e.title}, ${ampm(e.start)} to ${ampm(e.end)}${e.where ? `, ${e.where}` : ""}`);
+      const short = e.end - e.start <= 0.5;
+      ev.innerHTML = short
+        ? `<div class="t">${e.title}</div>`
+        : `<div class="t">${e.title}</div><div class="s">${ampm(e.start)} – ${ampm(e.end)}</div>` +
+          (e.where && e.end - e.start > 1 ? `<div class="s">${e.where}</div>` : "");
+      Object.assign(ev.style, {
+        left: `${x(e.day + (e.x ?? 0)) + 2}px`,
+        width: `${colW * (e.w ?? 1) - 6}px`,
+        top: `${(e.start - WEEK.firstHour) * H + 1}px`,
+        height: `${(e.end - e.start) * H - 2}px`,
+        padding: short ? "2px 8px 2px 9px" : "",
+      });
+      body.append(ev);
+    }
+
+    for (const e of ALL_DAY) {
+      const ev = event(e, `${e.title}, all day`);
+      ev.innerHTML = `<div class="t">${e.title}</div>`;
+      Object.assign(ev.style, { left: `${x(e.day) + 2}px`, width: `${colW * (e.span ?? 1) - 6}px` });
+      $("header").append(ev);
+    }
+
+    applyMask("outlook-web");
+    document.documentElement.dataset.ready = "";
+  </script>
+</body>
+</html>

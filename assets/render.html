@@ -1,18 +1,20 @@
 <!doctype html>
 <!--
-  Source for the store images. tools/render-assets.mjs opens this page in
-  headless Chrome at each image's exact size and picks the image with the hash:
+  Lays out the store images. tools/render-assets.mjs opens this page in headless
+  Chrome at each image's exact size and picks the image with the hash:
 
-    #shot=<name>   a raw/<name>.png capture in a dark macOS window (1280x800)
-    #split         week view, extension off on the left and on on the right (1280x800)
+    #shot=<page>    one page from mock/ in a dark macOS window (1280x800)
+    #split=<page>   that page with the extension off on the left, on on the right
     #promo         small promo tile (440x280)
     #marquee       marquee promo tile (1400x560)
+
+  Pages are the keys of PAGES below. Each is a live iframe of a mock that runs
+  the shipped code from src/, never a stored picture.
 -->
 <html>
 <head>
 <meta charset="utf-8">
 <title>Store asset renderer</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=block">
 <style>
   * { box-sizing: border-box; margin: 0; }
@@ -29,7 +31,7 @@
       linear-gradient(160deg, #1d1f4a 0%, #0e0f22 100%);
   }
 
-  /* Window: 1088x680 of content (0.85 of the 1280x800 capture) plus title bar. */
+  /* Window: 1088x680 of content (the 1280x800 page at 0.85) plus title bar. */
   .win {
     position: absolute; left: 96px; top: 41px; width: 1088px;
     border-radius: 12px; overflow: hidden; background: #1f1f1f;
@@ -44,28 +46,38 @@
   .lights i:nth-child(3) { background: #28c840; }
   .url {
     position: absolute; left: 50%; top: 7px; transform: translateX(-50%);
-    width: 360px; height: 24px; border-radius: 6px; background: #1c1c1e;
+    width: 380px; height: 24px; border-radius: 6px; background: #1c1c1e;
     color: #a1a1a6; font-size: 12.5px; line-height: 24px; text-align: center;
   }
   .url svg { width: 10px; height: 10px; vertical-align: -1px; margin-right: 5px; fill: #8e8e93; }
-  .view { position: relative; width: 1088px; height: 680px; }
-  .view img { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* The extension's toolbar button, with the OFF badge the worker sets. */
+  .ext { position: absolute; right: 14px; top: 7px; width: 26px; height: 24px; border-radius: 6px; display: grid; place-items: center; }
+  .ext.pressed { background: #3a3a3d; }
+  .ext img { width: 16px; height: 16px; border-radius: 3px; }
+  .ext b { position: absolute; right: -6px; bottom: -2px; padding: 0 3px; border-radius: 3px; background: #8a8f98;
+           color: #fff; font: 700 8px/11px Inter, sans-serif; }
+
+  .view { position: relative; width: 1088px; height: 680px; overflow: hidden; background: #1b1b1b; }
+  .view iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; border: 0;
+                 transform: scale(.85); transform-origin: 0 0; }
 
   /* Before/after inside the window. */
-  .view .after { clip-path: inset(0 0 0 620px); }
+  .view .after { clip-path: inset(0 0 0 730px); }
   .divider { position: absolute; top: 0; bottom: 0; left: 618px; width: 4px; background: #fff; box-shadow: 0 0 16px rgba(0,0,0,.6); }
   .label { position: absolute; top: 600px; padding: 9px 16px; border-radius: 999px; font-size: 20px; font-weight: 600; color: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.45); }
   .label.off { left: 456px; background: #3c4043; }
   .label.on { left: 640px; background: #5b63d3; }
 
-  /* Promo tiles share the brand block and the blurred chips. */
+  /* Promo tiles share the brand block, the switch and the blurred chips. */
   .tile { color: #fff; background: linear-gradient(135deg, #5b63d3 0%, #3d43a8 100%); }
   .brand { position: absolute; display: flex; align-items: center; }
   .brand img { box-shadow: 0 4px 14px rgba(0,0,0,.25); }
   .brand h1 { line-height: 1.1; font-weight: 800; letter-spacing: -.02em; }
-  .live { position: absolute; display: flex; align-items: center; gap: 8px; border-radius: 999px;
-          background: rgba(0,0,0,.28); font-weight: 600; }
-  .live i { width: 10px; height: 10px; border-radius: 50%; background: #ff5f57; box-shadow: 0 0 0 4px rgba(255,95,87,.3); }
+  .toggle { position: absolute; display: flex; align-items: center; gap: 10px; border-radius: 999px;
+            background: rgba(0,0,0,.28); font-weight: 600; }
+  .toggle i { position: relative; width: 34px; height: 20px; border-radius: 10px; background: #8ce99a; flex: none; }
+  .toggle i::after { content: ""; position: absolute; right: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
   .chip { border-radius: 7px; font-weight: 600; color: transparent; text-shadow: 0 0 6px rgba(255,255,255,.75); }
   .chip.a { background: #8e93ec; } .chip.b { background: #e8c27a; } .chip.c { background: #7fc89a; } .chip.d { background: #ef8f8f; }
 
@@ -75,9 +87,9 @@
   #promo .brand { left: 28px; top: 28px; gap: 14px; }
   #promo .brand img { width: 56px; height: 56px; border-radius: 14px; }
   #promo h1 { font-size: 25px; }
-  #promo p { position: absolute; left: 28px; top: 102px; width: 230px; font-size: 16px; line-height: 1.35; opacity: .92; }
-  #promo .live { left: 28px; bottom: 28px; padding: 8px 14px; font-size: 14px; }
-  #promo .chips { position: absolute; right: -14px; top: 96px; width: 172px; display: grid; gap: 10px; }
+  #promo p { position: absolute; left: 28px; top: 102px; width: 250px; font-size: 16px; line-height: 1.35; opacity: .92; }
+  #promo .toggle { left: 28px; bottom: 28px; padding: 7px 14px 7px 8px; font-size: 14px; }
+  #promo .chips { position: absolute; left: 282px; top: 96px; width: 172px; display: grid; gap: 10px; }
   #promo .chip { height: 34px; padding: 9px 12px; font-size: 14px; }
 
   /* Marquee promo tile, 1400x560: pitch on the left, the product on the right. */
@@ -85,8 +97,8 @@
   #marquee .brand img { width: 88px; height: 88px; border-radius: 20px; }
   #marquee h1 { font-size: 46px; }
   #marquee p { position: absolute; left: 80px; top: 228px; width: 470px; font-size: 26px; line-height: 1.35; opacity: .94; }
-  #marquee .live { left: 80px; top: 360px; padding: 10px 18px; font-size: 17px; }
-  #marquee .works { position: absolute; left: 80px; top: 438px; font-size: 16px; opacity: .7; }
+  #marquee .toggle { left: 80px; top: 352px; padding: 9px 18px 9px 10px; font-size: 17px; }
+  #marquee .works { position: absolute; left: 80px; top: 436px; font-size: 16px; opacity: .72; }
   #marquee .win { left: 640px; top: 70px; transform-origin: top left; transform: scale(.82); }
 </style>
 </head>
@@ -95,7 +107,8 @@
     <div class="win">
       <div class="bar">
         <div class="lights"><i></i><i></i><i></i></div>
-        <div class="url"><svg viewBox="0 0 10 12"><path d="M2 5V3.5a3 3 0 0 1 6 0V5h1v7H1V5h1zm1.2 0h3.6V3.5a1.8 1.8 0 0 0-3.6 0V5z"/></svg>calendar.google.com</div>
+        <div class="url"><svg viewBox="0 0 10 12"><path d="M2 5V3.5a3 3 0 0 1 6 0V5h1v7H1V5h1zm1.2 0h3.6V3.5a1.8 1.8 0 0 0-3.6 0V5z"/></svg><span></span></div>
+        <div class="ext"><img src="../src/icons/icon48.png" alt=""></div>
       </div>
       <div class="view"></div>
     </div>
@@ -107,10 +120,10 @@
   <section id="promo" class="page tile">
     <div class="brand">
       <img src="../src/icons/icon128.png" alt="">
-      <h1>Calendar<br>Privacy Blur</h1>
+      <h1>Calendar(s)<br>Privacy Blur</h1>
     </div>
-    <p>Hide event titles while you share your screen.</p>
-    <div class="live"><i></i>Presenting</div>
+    <p>Blur event titles in one click.</p>
+    <div class="toggle"><i></i>Blur on</div>
     <div class="chips">
       <div class="chip a">Quarterly review</div>
       <div class="chip b">Dentist</div>
@@ -122,30 +135,49 @@
   <section id="marquee" class="page tile">
     <div class="brand">
       <img src="../src/icons/icon128.png" alt="">
-      <h1>Calendar<br>Privacy Blur</h1>
+      <h1>Calendar(s)<br>Privacy Blur</h1>
     </div>
-    <p>Share your screen without sharing your schedule.</p>
-    <div class="live"><i></i>Presenting — event titles hidden</div>
-    <div class="works">Google Calendar · Outlook on the web</div>
+    <p>Share your screen, not your schedule.</p>
+    <div class="toggle"><i></i>One click hides every event title</div>
+    <div class="works">Google Calendar · Outlook on the web · any calendar you add</div>
   </section>
 
   <script>
-    const framed = (page) => {
+    /** Mock pages: where they live, the address shown, and whether blur is on. */
+    const PAGES = {
+      "google":         { src: "mock/google.html", url: "calendar.google.com/calendar/r/week", on: false },
+      "google-masked":  { src: "mock/google.html?masked", url: "calendar.google.com/calendar/r/week", on: true },
+      "outlook":        { src: "mock/outlook.html", url: "outlook.office.com/calendar/view/week", on: false },
+      "outlook-masked": { src: "mock/outlook.html?masked", url: "outlook.office.com/calendar/view/week", on: true },
+      "options":        { src: "mock/options.html", url: "chrome-extension://…/options.html", on: true },
+    };
+
+    const frame = (key, cls = "") =>
+      Object.assign(document.createElement("iframe"), { src: PAGES[key].src, className: cls, scrolling: "no" });
+
+    /** A window on `page`, showing `key` and the toolbar state that goes with it. */
+    const framed = (page, key) => {
       page.append(document.getElementById("window").content.cloneNode(true));
+      const { url, on } = PAGES[key];
+      page.querySelector(".url span").textContent = url;
+      const ext = page.querySelector(".ext");
+      ext.classList.toggle("pressed", on);
+      if (!on) ext.insertAdjacentHTML("beforeend", "<b>OFF</b>");
       return page.querySelector(".view");
     };
-    const img = (src, cls) => Object.assign(document.createElement("img"), { src, className: cls ?? "" });
 
     const [name, arg] = location.hash.slice(1).split("=");
-    document.getElementById(name)?.classList.add("on");
-    if (name === "shot") framed(document.getElementById("shot")).append(img(`raw/${arg}.png`));
+    const page = document.getElementById(name);
+    page?.classList.add("on");
+    if (name === "shot") framed(page, arg).append(frame(arg));
     if (name === "split") {
-      const view = framed(document.getElementById("split"));
-      view.append(img("raw/03-week-unmasked.png"), img("raw/02-week-masked.png", "after"));
+      // The toolbar shows the right-hand, blurred state.
+      const view = framed(page, `${arg}-masked`);
+      view.append(frame(arg), frame(`${arg}-masked`, "after"));
       view.insertAdjacentHTML("beforeend",
         '<div class="divider"></div><div class="label off">Off</div><div class="label on">On</div>');
     }
-    if (name === "marquee") framed(document.getElementById("marquee")).append(img("raw/02-week-masked.png"));
+    if (name === "marquee") framed(page, "google-masked").append(frame("google-masked"));
   </script>
 </body>
 </html>
