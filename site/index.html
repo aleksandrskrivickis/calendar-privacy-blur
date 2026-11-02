@@ -13,121 +13,317 @@
 <meta property="og:title" content="Calendar(s) privacy blur">
 <meta property="og:description" content="Share your screen, not your schedule. One click blurs every event title.">
 <meta property="og:image" content="https://aleksandrskrivickis.github.io/calendar-privacy-blur/assets/promo-marquee-1400x560.png">
+<meta name="theme-color" content="#08080f">
 <link rel="icon" href="src/icons/icon48.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@1&display=swap">
 <link rel="stylesheet" href="style.css">
+<script>document.documentElement.classList.add("js");</script>
 <style>
-  .hero { display: grid; grid-template-columns: 1fr; gap: 24px; padding: 56px 0 40px; max-width: 760px; }
-  .hero .brand { display: flex; align-items: center; gap: 18px; }
-  .hero .brand img { width: 72px; height: 72px; border-radius: 18px; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); }
-  .hero h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.05; font-weight: 800; letter-spacing: -.03em; }
-  .hero p { font-size: clamp(18px, 2.4vw, 22px); color: #d5d7ea; }
-  .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; }
-  .hero small { color: var(--muted); font-size: 14px; }
+  section { margin-top: 140px; }
+  .section-head { max-width: 640px; margin-bottom: 48px; }
+  .section-head h2 { font-size: clamp(30px, 4.6vw, 44px); line-height: 1.1; letter-spacing: -.03em; font-weight: 600; margin-top: 12px; }
+  .section-head p { margin-top: 16px; font-size: 18px; color: var(--soft); }
+  .center { text-align: center; margin-left: auto; margin-right: auto; }
 
-  /* Live demo: a macOS-style window around the mock, as in the store images. */
-  .demo-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 24px 0 16px; }
-  .tabs { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, .06); }
-  .tabs button { border: 0; padding: 8px 16px; border-radius: 999px; background: none; color: var(--muted); font: 600 14px Inter, sans-serif; cursor: pointer; }
-  .tabs button[aria-selected="true"] { background: rgba(255, 255, 255, .12); color: var(--fg); }
-  .switch { display: inline-flex; align-items: center; gap: 10px; border: 0; padding: 8px 16px 8px 8px; border-radius: 999px;
-            background: rgba(0, 0, 0, .3); color: var(--fg); font: 600 14px Inter, sans-serif; cursor: pointer; }
-  .switch i { position: relative; width: 34px; height: 20px; border-radius: 10px; background: #5c5f78; transition: background .15s; }
-  .switch i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+  /* Scroll-in: only when scripts run, so the page never stays hidden. */
+  .js .reveal { opacity: 0; transform: translateY(16px); transition: opacity .7s ease, transform .7s ease; }
+  .js .reveal.in { opacity: 1; transform: none; }
+
+  /* Hero */
+  .hero { padding: 96px 0 0; text-align: center; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px 0 6px; border-radius: 999px;
+          font-size: 13px; color: var(--soft); background: var(--surface); box-shadow: inset 0 0 0 1px var(--line-hi); }
+  .pill img { width: 20px; height: 20px; border-radius: 5px; }
+  .hero h1 { margin: 28px auto 0; max-width: 900px; font-size: clamp(44px, 8.4vw, 92px); line-height: .98; letter-spacing: -.045em; font-weight: 600; }
+  .hero h1 .serif { display: block; font-size: 1.08em; letter-spacing: -.02em;
+                    background: linear-gradient(90deg, #c7caff, #8e93ec 50%, #c39be0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero .lead { margin: 28px auto 0; max-width: 600px; font-size: clamp(17px, 2.2vw, 20px); color: var(--soft); }
+  .hero .cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 36px; }
+  .hero .fine { margin-top: 20px; font-size: 13px; color: var(--muted); }
+
+  /* Demo: a macOS-style window around the mock, as in the store images. */
+  #demo { margin-top: 80px; scroll-margin-top: 90px; }
+  .controls { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .tabs { display: inline-flex; padding: 4px; border-radius: 999px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+  .tabs button { border: 0; height: 34px; padding: 0 16px; border-radius: 999px; background: none; color: var(--muted); font: 500 14px var(--sans); cursor: pointer; transition: color .15s, background .15s; }
+  .tabs button:hover { color: var(--fg); }
+  .tabs button[aria-selected="true"] { background: rgba(255, 255, 255, .1); color: var(--fg); }
+  .switch { display: inline-flex; align-items: center; gap: 10px; height: 42px; border: 0; padding: 0 16px 0 6px; border-radius: 999px;
+            background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); color: var(--fg); font: 500 14px var(--sans); cursor: pointer; }
+  .switch i { position: relative; width: 40px; height: 24px; border-radius: 12px; background: #3a3b4f; transition: background .2s; }
+  .switch i::after { content: ""; position: absolute; left: 3px; top: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+                     box-shadow: 0 1px 3px rgba(0, 0, 0, .4); transition: left .2s cubic-bezier(.3, .7, .4, 1); }
   .switch[aria-pressed="true"] i { background: var(--on); }
-  .switch[aria-pressed="true"] i::after { left: 16px; }
-  .demo-head .hint { color: var(--muted); font-size: 14px; }
+  .switch[aria-pressed="true"] i::after { left: 19px; }
+  .switch span { min-width: 54px; text-align: left; }
 
-  .win { border-radius: 12px; overflow: hidden; background: #1f1f1f;
-         box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 30px 80px rgba(0, 0, 0, .55), 0 10px 24px rgba(0, 0, 0, .35); }
-  .bar { position: relative; height: 38px; background: #2a2a2c; border-bottom: 1px solid #000; }
+  .stage { position: relative; }
+  .stage::before { content: ""; position: absolute; inset: 8% 6% -6%; z-index: -1; border-radius: 40px;
+                   background: radial-gradient(closest-side, rgba(91, 99, 211, .45), transparent); filter: blur(40px); }
+  .win { border-radius: 14px; overflow: hidden; background: #1f1f1f;
+         box-shadow: 0 0 0 1px rgba(255, 255, 255, .12), 0 40px 100px rgba(0, 0, 0, .6), 0 12px 30px rgba(0, 0, 0, .4); }
+  .bar { position: relative; height: 38px; background: #29292c; border-bottom: 1px solid #000; }
   .lights { position: absolute; left: 14px; top: 13px; display: flex; gap: 8px; }
   .lights i { width: 12px; height: 12px; border-radius: 50%; }
   .lights i:nth-child(1) { background: #ff5f57; }
   .lights i:nth-child(2) { background: #febc2e; }
   .lights i:nth-child(3) { background: #28c840; }
-  .url { position: absolute; left: 50%; top: 7px; transform: translateX(-50%); width: min(380px, 55%); height: 24px; border-radius: 6px;
+  .url { position: absolute; left: 50%; top: 7px; transform: translateX(-50%); width: min(380px, 52%); height: 24px; border-radius: 6px;
          background: #1c1c1e; color: #a1a1a6; font-size: 12.5px; line-height: 24px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ext { position: absolute; right: 14px; top: 7px; width: 26px; height: 24px; border: 0; border-radius: 6px; padding: 0;
          display: grid; place-items: center; background: none; cursor: pointer; }
+  .ext:hover { background: #3a3a3d; }
   .ext[aria-pressed="true"] { background: #3a3a3d; }
   .ext img { width: 16px; height: 16px; border-radius: 3px; }
-  .ext b { position: absolute; right: -6px; bottom: -2px; padding: 0 3px; border-radius: 3px; background: #8a8f98; color: #fff; font: 700 8px/11px Inter, sans-serif; }
+  .ext b { position: absolute; right: -6px; bottom: -2px; padding: 0 3px; border-radius: 3px; background: #8a8f98; color: #fff; font: 700 8px/11px var(--sans); }
   .ext[aria-pressed="true"] b { display: none; }
 
-  /* The mocks are laid out at exactly 1280x800; the script scales them to fit. */
+  /* The mocks are laid out at exactly 1280x800; the script scales them to fit.
+     Both states stay loaded and cross-fade, so a toggle never reloads. */
   .view { position: relative; aspect-ratio: 1280 / 800; overflow: hidden; background: #1b1b1b; }
-  .view iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; border: 0; transform-origin: 0 0; pointer-events: none; }
-  .view iframe[hidden] { display: block; visibility: hidden; }
+  .view iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; border: 0; transform-origin: 0 0;
+                 pointer-events: none; transition: opacity .35s ease; }
+  .view iframe.off { opacity: 0; }
+  .caption { margin-top: 20px; text-align: center; font-size: 13px; color: var(--muted); }
+  kbd { font: 600 11px var(--sans); padding: 2px 6px; border-radius: 5px; color: var(--soft); box-shadow: inset 0 0 0 1px var(--line-hi), 0 1px 0 var(--line-hi); }
 
-  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 72px; }
-  .card { padding: 24px; border-radius: 16px; background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
-  .card h2 { font-size: 18px; margin-bottom: 6px; }
-  .card p { color: #c9cbe0; font-size: 15px; }
+  /* Works with */
+  .works { margin-top: 96px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px 36px; color: var(--muted); font-size: 14px; }
+  .works strong { color: var(--soft); font-weight: 500; font-size: 15px; }
 
-  .settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px; align-items: center; margin-top: 72px; }
-  .settings h2 { font-size: 28px; letter-spacing: -.01em; margin-bottom: 8px; }
-  .settings p { color: #c9cbe0; }
-  .settings p + p { margin-top: 12px; }
-  .settings img { width: 100%; height: auto; border-radius: 12px; }
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); border-top: 1px solid var(--line); }
+  .step { padding: 32px 32px 8px 0; }
+  .step + .step { padding-left: 32px; border-left: 1px solid var(--line); }
+  .step .n { font: italic 56px/1 var(--serif); color: var(--brand-hi); }
+  .step h3 { margin-top: 20px; font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+  .step p { margin-top: 8px; color: var(--soft); }
+  @media (max-width: 860px) { .step, .step + .step { padding: 28px 0 20px; border-left: 0; } .step + .step { border-top: 1px solid var(--line); } }
+
+  /* Features */
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1px; background: var(--line);
+          border-radius: 20px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+  .feature { padding: 32px; background: var(--bg); }
+  .feature svg { width: 22px; height: 22px; fill: none; stroke: var(--brand-hi); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .feature h3 { margin-top: 18px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+  .feature p { margin-top: 6px; font-size: 15px; color: var(--soft); }
+
+  /* Privacy */
+  .privacy { position: relative; padding: clamp(32px, 6vw, 72px); border-radius: 28px; overflow: hidden;
+             background: linear-gradient(160deg, rgba(91, 99, 211, .22), rgba(122, 63, 160, .08) 60%, transparent), var(--surface);
+             box-shadow: inset 0 0 0 1px var(--line-hi); }
+  .privacy h2 { max-width: 760px; font-size: clamp(32px, 5vw, 52px); line-height: 1.05; letter-spacing: -.035em; font-weight: 600; margin-top: 12px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 32px; margin-top: 48px; }
+  .stat b { display: block; font: italic 64px/1 var(--serif); color: var(--fg); }
+  .stat span { display: block; margin-top: 10px; font-size: 15px; color: var(--soft); }
+  .privacy .more { display: inline-block; margin-top: 40px; font-weight: 500; }
+
+  /* Settings */
+  .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 56px; align-items: center; }
+  .split .section-head { margin-bottom: 0; }
+  .split ul { margin-top: 20px; padding: 0; list-style: none; color: var(--soft); }
+  .split li { position: relative; padding-left: 22px; }
+  .split li + li { margin-top: 10px; }
+  .split li::before { content: ""; position: absolute; left: 0; top: .68em; width: 8px; height: 8px; border-radius: 50%; background: var(--brand); }
+  .shot { border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px var(--line-hi), 0 30px 80px rgba(0, 0, 0, .5); }
+  .shot img { display: block; width: 100%; height: auto; }
+  @media (max-width: 860px) { .split { grid-template-columns: 1fr; gap: 40px; } }
+
+  /* FAQ */
+  .faq { max-width: 760px; }
+  details { border-top: 1px solid var(--line); }
+  details:last-child { border-bottom: 1px solid var(--line); }
+  summary { display: flex; align-items: center; gap: 16px; padding: 22px 0; font-size: 17px; font-weight: 500; cursor: pointer; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: ""; margin-left: auto; flex: none; width: 10px; height: 10px; border: solid var(--muted); border-width: 0 1.5px 1.5px 0;
+                   transform: rotate(45deg) translate(-3px, -3px); transition: transform .2s; }
+  details[open] summary::after { transform: rotate(-135deg) translate(-3px, -3px); }
+  details p { padding: 0 32px 24px 0; color: var(--soft); }
+
+  .closing { text-align: center; }
+  .closing h2 { font-size: clamp(34px, 5.6vw, 60px); line-height: 1.02; letter-spacing: -.04em; font-weight: 600; }
+  .closing .cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 32px; }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <nav>
+  <nav>
+    <div class="wrap">
       <a class="home" href="./"><img src="src/icons/icon48.png" alt="">Calendar(s) privacy blur</a>
       <span class="spacer"></span>
+      <a class="link optional" href="#how">How it works</a>
+      <a class="link optional" href="#faq">FAQ</a>
       <a class="link" href="privacy.html">Privacy</a>
       <a class="link" href="https://github.com/aleksandrskrivickis/calendar-privacy-blur">GitHub</a>
-    </nav>
+    </div>
+  </nav>
 
+  <main class="wrap">
     <header class="hero">
-      <div class="brand"><img src="src/icons/icon128.png" alt=""></div>
-      <h1>Share your screen, not your schedule.</h1>
-      <p>Calendar(s) privacy blur is a Chrome extension that blurs every event title in Google Calendar,
-        Outlook on the web and any other calendar you add. One click on its toolbar button turns it on or off.</p>
+      <span class="pill"><img src="src/icons/icon48.png" alt="">Chrome extension for web calendars</span>
+      <h1>Share your screen,<span class="serif">not your schedule.</span></h1>
+      <p class="lead">Calendar(s) privacy blur hides every event title in Google Calendar, Outlook on the web and any
+        other calendar you add. One click on its toolbar button, and you are ready to present.</p>
       <div class="cta">
-        <a class="button" href="https://github.com/aleksandrskrivickis/calendar-privacy-blur/releases/latest">Download the latest release</a>
-        <a class="button ghost" href="https://github.com/aleksandrskrivickis/calendar-privacy-blur">Source on GitHub</a>
+        <a class="button" href="#demo">See it in action</a>
+        <a class="button ghost" href="https://github.com/aleksandrskrivickis/calendar-privacy-blur">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.35c-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.22 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.77-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 0 0 8 0z"/></svg>
+          View the source</a>
       </div>
-      <small>Not affiliated with Microsoft or Google.</small>
+      <p class="fine">Free and open source · Not affiliated with Microsoft or Google</p>
     </header>
 
-    <section aria-label="Live demo">
-      <div class="demo-head">
-        <div class="tabs" role="tablist">
+    <div id="demo" class="reveal">
+      <div class="controls">
+        <div class="tabs" role="tablist" aria-label="Calendar">
           <button role="tab" aria-selected="true" data-cal="google">Google Calendar</button>
           <button role="tab" aria-selected="false" data-cal="outlook">Outlook on the web</button>
         </div>
-        <button class="switch" id="switch" aria-pressed="true"><i></i>Blur on</button>
-        <span class="hint">Try it: this demo runs the extension's own rules on a sample week.</span>
+        <button class="switch" id="switch" aria-pressed="false"><i></i><span>Blur off</span></button>
       </div>
-      <div class="win">
-        <div class="bar">
-          <div class="lights"><i></i><i></i><i></i></div>
-          <div class="url" id="url"></div>
-          <button class="ext" id="ext" aria-pressed="true" title="Calendar(s) privacy blur"><img src="src/icons/icon48.png" alt="Toggle blur"><b>OFF</b></button>
+      <div class="stage">
+        <div class="win">
+          <div class="bar">
+            <div class="lights"><i></i><i></i><i></i></div>
+            <div class="url" id="url"></div>
+            <button class="ext" id="ext" aria-pressed="false" title="Calendar(s) privacy blur"><img src="src/icons/icon48.png" alt="Toggle blur"><b>OFF</b></button>
+          </div>
+          <div class="view" id="view"></div>
         </div>
-        <div class="view" id="view"></div>
+      </div>
+      <p class="caption">A sample week with the extension's own rules. Click the toolbar icon, the switch, or press <kbd>B</kbd>.</p>
+    </div>
+
+    <div class="works reveal" aria-label="Works with">
+      <span>Works with</span>
+      <strong>Google Calendar</strong>
+      <strong>Outlook on the web</strong>
+      <strong>Outlook.com</strong>
+      <strong>Microsoft 365</strong>
+      <strong>+ any calendar you add</strong>
+    </div>
+
+    <section id="how">
+      <div class="section-head reveal">
+        <span class="eyebrow">How it works</span>
+        <h2>Built for the moment before you hit “Share”.</h2>
+      </div>
+      <div class="steps reveal">
+        <div class="step"><div class="n">1</div><h3>Install it once</h3>
+          <p>Blur is on from the start. Open your calendar and every event is already smudged.</p></div>
+        <div class="step"><div class="n">2</div><h3>Share with confidence</h3>
+          <p>Titles, times and places blur; colours and layout stay. People see a busy week, not what fills it.</p></div>
+        <div class="step"><div class="n">3</div><h3>Click to reveal</h3>
+          <p>The toolbar button brings titles back. An OFF badge reminds you before the next call.</p></div>
       </div>
     </section>
 
-    <section class="features">
-      <div class="card"><h2>One click</h2><p>Blur is on as soon as it is installed. Click the toolbar button to show titles again; an OFF badge reminds you.</p></div>
-      <div class="card"><h2>Any calendar</h2><p>Google Calendar and Outlook on the web work out of the box. Add other calendars in settings with your own CSS selector.</p></div>
-      <div class="card"><h2>Nothing leaves your browser</h2><p>No network requests, no analytics, no page reading. It only adds and removes a stylesheet. <a href="privacy.html">Privacy policy</a></p></div>
+    <section>
+      <div class="section-head reveal">
+        <span class="eyebrow">Details</span>
+        <h2>Small, precise, and out of your way.</h2>
+      </div>
+      <div class="grid reveal">
+        <div class="feature">
+          <svg viewBox="0 0 24 24"><path d="M9 3.5 19 13l-4.4.6 2.6 5.4-2.3 1.1-2.6-5.4L9 18z"/></svg>
+          <h3>One click, every tab</h3>
+          <p>The toggle applies to all open calendar tabs at once and is remembered across restarts.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          <h3>Only the events</h3>
+          <p>Scoped selectors blur event chips and nothing else, so navigation, dates and buttons stay readable.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          <h3>Add any calendar</h3>
+          <p>Point it at another https site with a CSS selector, and test the rule on an open tab before saving.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.5 3.2 8.3 7.5 9.5 4.3-1.2 7.5-5 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></svg>
+          <h3>Nothing leaves the browser</h3>
+          <p>No network requests, no analytics, no page reading. It adds a stylesheet and takes it away.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+          <h3>Instant</h3>
+          <p>Blur is plain CSS applied by the browser, so it appears with the page and survives navigation.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></svg>
+          <h3>Open source</h3>
+          <p>Every line is on GitHub, with no build step: what you read is what runs.</p>
+        </div>
+      </div>
     </section>
 
-    <section class="settings">
-      <div>
-        <h2>Settings when you need them</h2>
-        <p>Right-click the toolbar button and choose Options to switch calendars on or off, add another site,
-          or test a rule against an open tab before saving it.</p>
-        <p>Each site you add asks for its own permission, and you can revoke it from <code>chrome://extensions</code> at any time.</p>
+    <section>
+      <div class="privacy reveal">
+        <span class="eyebrow">Privacy</span>
+        <h2>A privacy tool that doesn’t need your data.</h2>
+        <div class="stats">
+          <div class="stat"><b>0</b><span>network requests, ever</span></div>
+          <div class="stat"><b>0</b><span>bytes of personal data collected</span></div>
+          <div class="stat"><b>2</b><span>settings stored, on your device only</span></div>
+        </div>
+        <a class="more" href="privacy.html">Read the privacy policy →</a>
       </div>
-      <img src="assets/screenshots/05-settings.png" alt="The extension's settings page" width="1280" height="800" loading="lazy">
     </section>
-  </div>
+
+    <section>
+      <div class="split">
+        <div class="section-head reveal">
+          <span class="eyebrow">Settings</span>
+          <h2>There when you need it.</h2>
+          <p>Right-click the toolbar button and choose Options.</p>
+          <ul>
+            <li>Turn each calendar on or off.</li>
+            <li>Add another site with its own selector.</li>
+            <li>Count matches on an open tab before saving.</li>
+            <li>Each new site asks for its own permission.</li>
+          </ul>
+        </div>
+        <div class="shot reveal"><img src="assets/screenshots/05-settings.png" alt="The extension's settings page" width="1280" height="800" loading="lazy"></div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="section-head reveal">
+        <span class="eyebrow">FAQ</span>
+        <h2>Questions, answered.</h2>
+      </div>
+      <div class="faq reveal">
+        <details>
+          <summary>Does it work with Zoom, Teams, Meet and others?</summary>
+          <p>Yes. The blur is applied to the calendar page itself, so whatever shares your screen, window or tab shows it blurred.</p>
+        </details>
+        <details>
+          <summary>What exactly is blurred?</summary>
+          <p>The text inside each event: title, time and location. Event colours and the calendar around them stay as they are.</p>
+        </details>
+        <details>
+          <summary>Is anything still visible?</summary>
+          <p>Hover cards and an opened event still show full details; the blur covers the calendar grid. The text is hidden, not deleted, so it protects against onlookers, not against someone at your keyboard.</p>
+        </details>
+        <details>
+          <summary>My calendar was open before I installed it.</summary>
+          <p>Reload that tab once. Tabs opened after installing are covered straight away.</p>
+        </details>
+        <details>
+          <summary>Can I use it with another calendar?</summary>
+          <p>Yes. In settings, add the site’s address and a CSS selector for its events. The extension asks for permission to that site only.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="closing reveal">
+      <h2>Your week is <span class="serif">your business.</span></h2>
+      <div class="cta">
+        <a class="button" href="#demo">Try the demo</a>
+        <a class="button ghost" href="https://github.com/aleksandrskrivickis/calendar-privacy-blur">View the source</a>
+      </div>
+    </section>
+  </main>
 
   <footer>
     <div class="wrap">
@@ -135,6 +331,7 @@
       <span class="spacer"></span>
       <a href="privacy.html">Privacy policy</a>
       <a href="https://github.com/aleksandrskrivickis/calendar-privacy-blur/issues">Support</a>
+      <a href="https://github.com/aleksandrskrivickis/calendar-privacy-blur">GitHub</a>
       <span>Not affiliated with Microsoft or Google.</span>
     </div>
   </footer>
@@ -148,16 +345,18 @@
     const sw = document.getElementById("switch");
     const ext = document.getElementById("ext");
     let cal = "google";
-    let on = true;
+    let on = false;
+    let touched = false;
 
     // Each calendar gets a plain and a masked frame, made on first use and
-    // swapped on toggle, so switching is instant and never reloads.
+    // cross-faded on toggle, so switching is instant and never reloads.
     const frames = {};
     function framesFor(key) {
       if (!frames[key]) {
         frames[key] = [CALS[key].src, `${CALS[key].src}?masked`].map((src) => {
           const f = Object.assign(document.createElement("iframe"), { src, tabIndex: -1, title: "Sample calendar week" });
           f.setAttribute("scrolling", "no");
+          f.setAttribute("aria-hidden", "true");
           view.append(f);
           return f;
         });
@@ -169,12 +368,12 @@
     function render() {
       framesFor(cal);
       for (const [key, [plain, masked]] of Object.entries(frames)) {
-        plain.hidden = key !== cal || on;
-        masked.hidden = key !== cal || !on;
+        plain.classList.toggle("off", key !== cal || on);
+        masked.classList.toggle("off", key !== cal || !on);
       }
       document.getElementById("url").textContent = CALS[cal].url;
       sw.setAttribute("aria-pressed", on);
-      sw.lastChild.textContent = on ? "Blur on" : "Blur off";
+      sw.querySelector("span").textContent = on ? "Blur on" : "Blur off";
       ext.setAttribute("aria-pressed", on);
       for (const t of document.querySelectorAll("[role=tab]")) t.setAttribute("aria-selected", t.dataset.cal === cal);
     }
@@ -185,9 +384,28 @@
     }
     new ResizeObserver(fit).observe(view);
 
-    sw.onclick = ext.onclick = () => { on = !on; render(); };
-    for (const t of document.querySelectorAll("[role=tab]")) t.onclick = () => { cal = t.dataset.cal; render(); };
+    const toggle = () => { touched = true; on = !on; render(); };
+    sw.onclick = ext.onclick = toggle;
+    addEventListener("keydown", (e) => {
+      if (e.key.toLowerCase() === "b" && !e.metaKey && !e.ctrlKey && !e.altKey && !/input|textarea/i.test(e.target.tagName)) toggle();
+    });
+    for (const t of document.querySelectorAll("[role=tab]")) t.onclick = () => { touched = true; cal = t.dataset.cal; render(); };
+    framesFor("outlook");
     render();
+
+    // Starts with blur off, then switches it on once the demo is in view, so
+    // the first thing a visitor sees is the extension doing its job.
+    const io = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      io.disconnect();
+      setTimeout(() => { if (!touched) { on = true; render(); } }, 1200);
+    }, { threshold: .5 });
+    io.observe(view);
+
+    const reveal = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) { e.target.classList.add("in"); reveal.unobserve(e.target); }
+    }, { rootMargin: "0px 0px -8% 0px" });
+    document.querySelectorAll(".reveal").forEach((el) => reveal.observe(el));
   </script>
 </body>
 </html>
