@@ -1,0 +1,54 @@
+/* Shared by the site's pages. Dark only, in the icon's indigo, like the store
+   images. */
+:root {
+  color-scheme: dark;
+  --bg: #0e0f22;
+  --panel: #17183a;
+  --line: rgba(255, 255, 255, .1);
+  --fg: #ecedf7;
+  --muted: #a3a6c4;
+  --brand: #5b63d3;
+  --brand-hi: #8e93ec;
+  --on: #8ce99a;
+}
+* { box-sizing: border-box; margin: 0; }
+html { background: var(--bg); }
+body {
+  min-height: 100vh; color: var(--fg); font: 16px/1.6 Inter, -apple-system, system-ui, sans-serif;
+  background:
+    radial-gradient(900px 600px at 10% -10%, rgba(74, 79, 196, .55) 0%, transparent 60%),
+    radial-gradient(800px 600px at 100% 40%, rgba(122, 63, 160, .35) 0%, transparent 55%),
+    var(--bg);
+}
+a { color: var(--brand-hi); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+
+nav { display: flex; align-items: center; gap: 12px; padding: 20px 0; }
+nav .home { display: flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; font-weight: 700; }
+nav .home img { width: 28px; height: 28px; border-radius: 7px; }
+nav .spacer { flex: 1; }
+nav a.link { color: var(--muted); text-decoration: none; font-size: 15px; }
+nav a.link:hover { color: var(--fg); }
+
+.button {
+  display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px;
+  font-weight: 600; text-decoration: none; color: #fff; background: var(--brand);
+  border: 0; font-size: 16px; cursor: pointer;
+}
+.button:hover { background: #6a72e0; }
+.button.ghost { background: rgba(255, 255, 255, .08); color: var(--fg); }
+.button.ghost:hover { background: rgba(255, 255, 255, .14); }
+
+footer { margin-top: 96px; padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+footer .spacer { flex: 1; }
+
+/* Text pages such as the privacy policy. */
+.prose { max-width: 720px; padding-top: 32px; }
+.prose h1 { font-size: 40px; line-height: 1.15; letter-spacing: -.02em; margin-bottom: 8px; }
+.prose h2 { font-size: 22px; margin: 36px 0 8px; }
+.prose p, .prose ul { margin-top: 12px; color: #d5d7ea; }
+.prose ul { padding-left: 22px; }
+.prose li + li { margin-top: 8px; }
+.prose code { font-size: .9em; padding: 1px 6px; border-radius: 5px; background: rgba(255, 255, 255, .08); }
+.prose .meta { color: var(--muted); }

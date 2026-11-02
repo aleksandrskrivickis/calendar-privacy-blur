@@ -1,0 +1,74 @@
+<!doctype html>
+<!--
+  Privacy policy, for the store listing's privacy policy URL. Keep it in step
+  with the Privacy section of src/README.md.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy · Calendar(s) privacy blur</title>
+<link rel="icon" href="src/icons/icon48.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <a class="home" href="./"><img src="src/icons/icon48.png" alt="">Calendar(s) privacy blur</a>
+      <span class="spacer"></span>
+      <a class="link" href="privacy.html">Privacy</a>
+      <a class="link" href="https://github.com/aleksandrskrivickis/calendar-privacy-blur">GitHub</a>
+    </nav>
+
+    <main class="prose">
+      <h1>Privacy policy</h1>
+      <p class="meta">Calendar(s) privacy blur, a Chrome extension.</p>
+
+      <p>Calendar(s) privacy blur does not collect, store, sell or share any personal data. It has no servers, and nothing it
+        does leaves your browser.</p>
+
+      <h2>What the extension stores</h2>
+      <ul>
+        <li>Whether blur is on or off.</li>
+        <li>Your list of calendars: which built-in ones are enabled, and any site and selector you add in settings.</li>
+      </ul>
+      <p>Both are kept in <code>chrome.storage.local</code> on your device. They are never sent anywhere, and removing the
+        extension deletes them.</p>
+
+      <h2>What it does not do</h2>
+      <ul>
+        <li><strong>No network requests.</strong> No remote code, no analytics, no fetch or XHR of any kind. You can confirm
+          this in DevTools → Network while toggling.</li>
+        <li><strong>No page reading.</strong> The extension adds and removes a stylesheet that blurs event titles. Its content
+          script only tells the extension that a calendar page has loaded; it never reads, extracts or sends page content.</li>
+        <li><strong>No tracking.</strong> No cookies, identifiers, browsing history or usage statistics.</li>
+      </ul>
+
+      <h2>Permissions</h2>
+      <ul>
+        <li><code>storage</code>, for the two settings above.</li>
+        <li><code>scripting</code>, to add and remove the blur stylesheet.</li>
+        <li>Host access limited to the Outlook on the web calendar paths and <code>calendar.google.com</code>.</li>
+        <li>Any other <code>https</code> site you add in settings asks for its own permission at that point. You can revoke
+          it from <code>chrome://extensions</code> at any time.</li>
+      </ul>
+
+      <h2>Changes and contact</h2>
+      <p>Changes to this policy are published on this page and in the
+        <a href="https://github.com/aleksandrskrivickis/calendar-privacy-blur">source repository</a>. Questions go to
+        <a href="https://github.com/aleksandrskrivickis/calendar-privacy-blur/issues">GitHub issues</a>.</p>
+    </main>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <span>Calendar(s) privacy blur</span>
+      <span class="spacer"></span>
+      <a href="./">Home</a>
+      <a href="https://github.com/aleksandrskrivickis/calendar-privacy-blur/issues">Support</a>
+      <span>Not affiliated with Microsoft or Google.</span>
+    </div>
+  </footer>
+</body>
+</html>

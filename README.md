@@ -15,6 +15,9 @@ selectors that leave the rest of the calendar UI alone, and no network access.
 
 Unofficial, not affiliated with Microsoft or Google.
 
+**Website:** https://aleksandrskrivickis.github.io/calendar-privacy-blur/ (with a
+live demo and the [privacy policy](https://aleksandrskrivickis.github.io/calendar-privacy-blur/privacy.html)).
+
 <table>
   <tr>
     <td width="50%"><img src="assets/screenshots/01-google-before-after.png" alt="Google Calendar, blur off on the left and on on the right"></td>
@@ -29,7 +32,8 @@ Unofficial, not affiliated with Microsoft or Google.
 ```
 src/      the extension — load this folder unpacked
 assets/   Chrome Web Store images, rendered from mock calendars by CI
-tools/    icon generator, asset renderer and the selector test fixture
+site/     the GitHub Pages site: home page with a live demo, privacy policy
+tools/    icon generator, asset and site builders, the selector test fixture
 ```
 
 **→ [src/README.md](src/README.md)** for what it does, how to load it in
@@ -104,6 +108,21 @@ node tools/render-assets.mjs
 ```
 
 See [assets/README.md](assets/README.md) for how the mocks work.
+
+### Website
+
+[`pages.yml`](.github/workflows/pages.yml) deploys the site to GitHub Pages on
+every push to `main` that touches `site/`, `assets/`, the rules or the icons.
+It builds `_site/` from `site/` plus the calendar mocks and store images, so
+the home page's demo runs the shipped rules from `src/rules.js`. To look at it
+locally:
+
+```bash
+node tools/build-site.mjs && python3 -m http.server -d _site
+```
+
+The `google*.html` file at the repo root is the Search Console verification
+for the site; the build copies it to the site root.
 
 ### Icons
 

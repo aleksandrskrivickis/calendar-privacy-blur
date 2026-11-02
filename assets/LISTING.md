@@ -102,7 +102,8 @@ Global promo video: none.
 
 | Field | Value |
 | --- | --- |
-| Official URL | None — needs a site verified in Google Search Console |
-| Homepage URL | https://github.com/aleksandrskrivickis/calendar-privacy-blur |
+| Official URL | https://aleksandrskrivickis.github.io/calendar-privacy-blur/ — once verified in Google Search Console |
+| Homepage URL | https://aleksandrskrivickis.github.io/calendar-privacy-blur/ |
 | Support URL | https://github.com/aleksandrskrivickis/calendar-privacy-blur/issues |
 | Mature content | No |
+| Privacy policy URL (Privacy tab) | https://aleksandrskrivickis.github.io/calendar-privacy-blur/privacy.html |

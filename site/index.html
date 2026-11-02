@@ -1,0 +1,193 @@
+<!doctype html>
+<!--
+  The project's GitHub Pages home. tools/build-site.mjs copies it into _site/
+  next to assets/ and src/, so the demo below runs the same mock pages and the
+  same rules (src/rules.js) as the store screenshots.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar(s) privacy blur</title>
+<meta name="description" content="One click blurs event titles in Google Calendar, Outlook on the web and other calendars. Not affiliated with Microsoft or Google.">
+<meta property="og:title" content="Calendar(s) privacy blur">
+<meta property="og:description" content="Share your screen, not your schedule. One click blurs every event title.">
+<meta property="og:image" content="https://aleksandrskrivickis.github.io/calendar-privacy-blur/assets/promo-marquee-1400x560.png">
+<link rel="icon" href="src/icons/icon48.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .hero { display: grid; grid-template-columns: 1fr; gap: 24px; padding: 56px 0 40px; max-width: 760px; }
+  .hero .brand { display: flex; align-items: center; gap: 18px; }
+  .hero .brand img { width: 72px; height: 72px; border-radius: 18px; box-shadow: 0 6px 20px rgba(0, 0, 0, .35); }
+  .hero h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.05; font-weight: 800; letter-spacing: -.03em; }
+  .hero p { font-size: clamp(18px, 2.4vw, 22px); color: #d5d7ea; }
+  .hero .cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .hero small { color: var(--muted); font-size: 14px; }
+
+  /* Live demo: a macOS-style window around the mock, as in the store images. */
+  .demo-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 24px 0 16px; }
+  .tabs { display: inline-flex; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, .06); }
+  .tabs button { border: 0; padding: 8px 16px; border-radius: 999px; background: none; color: var(--muted); font: 600 14px Inter, sans-serif; cursor: pointer; }
+  .tabs button[aria-selected="true"] { background: rgba(255, 255, 255, .12); color: var(--fg); }
+  .switch { display: inline-flex; align-items: center; gap: 10px; border: 0; padding: 8px 16px 8px 8px; border-radius: 999px;
+            background: rgba(0, 0, 0, .3); color: var(--fg); font: 600 14px Inter, sans-serif; cursor: pointer; }
+  .switch i { position: relative; width: 34px; height: 20px; border-radius: 10px; background: #5c5f78; transition: background .15s; }
+  .switch i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .switch[aria-pressed="true"] i { background: var(--on); }
+  .switch[aria-pressed="true"] i::after { left: 16px; }
+  .demo-head .hint { color: var(--muted); font-size: 14px; }
+
+  .win { border-radius: 12px; overflow: hidden; background: #1f1f1f;
+         box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 30px 80px rgba(0, 0, 0, .55), 0 10px 24px rgba(0, 0, 0, .35); }
+  .bar { position: relative; height: 38px; background: #2a2a2c; border-bottom: 1px solid #000; }
+  .lights { position: absolute; left: 14px; top: 13px; display: flex; gap: 8px; }
+  .lights i { width: 12px; height: 12px; border-radius: 50%; }
+  .lights i:nth-child(1) { background: #ff5f57; }
+  .lights i:nth-child(2) { background: #febc2e; }
+  .lights i:nth-child(3) { background: #28c840; }
+  .url { position: absolute; left: 50%; top: 7px; transform: translateX(-50%); width: min(380px, 55%); height: 24px; border-radius: 6px;
+         background: #1c1c1e; color: #a1a1a6; font-size: 12.5px; line-height: 24px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ext { position: absolute; right: 14px; top: 7px; width: 26px; height: 24px; border: 0; border-radius: 6px; padding: 0;
+         display: grid; place-items: center; background: none; cursor: pointer; }
+  .ext[aria-pressed="true"] { background: #3a3a3d; }
+  .ext img { width: 16px; height: 16px; border-radius: 3px; }
+  .ext b { position: absolute; right: -6px; bottom: -2px; padding: 0 3px; border-radius: 3px; background: #8a8f98; color: #fff; font: 700 8px/11px Inter, sans-serif; }
+  .ext[aria-pressed="true"] b { display: none; }
+
+  /* The mocks are laid out at exactly 1280x800; the script scales them to fit. */
+  .view { position: relative; aspect-ratio: 1280 / 800; overflow: hidden; background: #1b1b1b; }
+  .view iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 800px; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .view iframe[hidden] { display: block; visibility: hidden; }
+
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 72px; }
+  .card { padding: 24px; border-radius: 16px; background: rgba(255, 255, 255, .04); border: 1px solid var(--line); }
+  .card h2 { font-size: 18px; margin-bottom: 6px; }
+  .card p { color: #c9cbe0; font-size: 15px; }
+
+  .settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px; align-items: center; margin-top: 72px; }
+  .settings h2 { font-size: 28px; letter-spacing: -.01em; margin-bottom: 8px; }
+  .settings p { color: #c9cbe0; }
+  .settings p + p { margin-top: 12px; }
+  .settings img { width: 100%; height: auto; border-radius: 12px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <nav>
+      <a class="home" href="./"><img src="src/icons/icon48.png" alt="">Calendar(s) privacy blur</a>
+      <span class="spacer"></span>
+      <a class="link" href="privacy.html">Privacy</a>
+      <a class="link" href="https://github.com/aleksandrskrivickis/calendar-privacy-blur">GitHub</a>
+    </nav>
+
+    <header class="hero">
+      <div class="brand"><img src="src/icons/icon128.png" alt=""></div>
+      <h1>Share your screen, not your schedule.</h1>
+      <p>Calendar(s) privacy blur is a Chrome extension that blurs every event title in Google Calendar,
+        Outlook on the web and any other calendar you add. One click on its toolbar button turns it on or off.</p>
+      <div class="cta">
+        <a class="button" href="https://github.com/aleksandrskrivickis/calendar-privacy-blur/releases/latest">Download the latest release</a>
+        <a class="button ghost" href="https://github.com/aleksandrskrivickis/calendar-privacy-blur">Source on GitHub</a>
+      </div>
+      <small>Not affiliated with Microsoft or Google.</small>
+    </header>
+
+    <section aria-label="Live demo">
+      <div class="demo-head">
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-cal="google">Google Calendar</button>
+          <button role="tab" aria-selected="false" data-cal="outlook">Outlook on the web</button>
+        </div>
+        <button class="switch" id="switch" aria-pressed="true"><i></i>Blur on</button>
+        <span class="hint">Try it: this demo runs the extension's own rules on a sample week.</span>
+      </div>
+      <div class="win">
+        <div class="bar">
+          <div class="lights"><i></i><i></i><i></i></div>
+          <div class="url" id="url"></div>
+          <button class="ext" id="ext" aria-pressed="true" title="Calendar(s) privacy blur"><img src="src/icons/icon48.png" alt="Toggle blur"><b>OFF</b></button>
+        </div>
+        <div class="view" id="view"></div>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="card"><h2>One click</h2><p>Blur is on as soon as it is installed. Click the toolbar button to show titles again; an OFF badge reminds you.</p></div>
+      <div class="card"><h2>Any calendar</h2><p>Google Calendar and Outlook on the web work out of the box. Add other calendars in settings with your own CSS selector.</p></div>
+      <div class="card"><h2>Nothing leaves your browser</h2><p>No network requests, no analytics, no page reading. It only adds and removes a stylesheet. <a href="privacy.html">Privacy policy</a></p></div>
+    </section>
+
+    <section class="settings">
+      <div>
+        <h2>Settings when you need them</h2>
+        <p>Right-click the toolbar button and choose Options to switch calendars on or off, add another site,
+          or test a rule against an open tab before saving it.</p>
+        <p>Each site you add asks for its own permission, and you can revoke it from <code>chrome://extensions</code> at any time.</p>
+      </div>
+      <img src="assets/screenshots/05-settings.png" alt="The extension's settings page" width="1280" height="800" loading="lazy">
+    </section>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <span>Calendar(s) privacy blur</span>
+      <span class="spacer"></span>
+      <a href="privacy.html">Privacy policy</a>
+      <a href="https://github.com/aleksandrskrivickis/calendar-privacy-blur/issues">Support</a>
+      <span>Not affiliated with Microsoft or Google.</span>
+    </div>
+  </footer>
+
+  <script>
+    const CALS = {
+      google: { src: "assets/mock/google.html", url: "calendar.google.com/calendar/r/week" },
+      outlook: { src: "assets/mock/outlook.html", url: "outlook.office.com/calendar/view/week" },
+    };
+    const view = document.getElementById("view");
+    const sw = document.getElementById("switch");
+    const ext = document.getElementById("ext");
+    let cal = "google";
+    let on = true;
+
+    // Each calendar gets a plain and a masked frame, made on first use and
+    // swapped on toggle, so switching is instant and never reloads.
+    const frames = {};
+    function framesFor(key) {
+      if (!frames[key]) {
+        frames[key] = [CALS[key].src, `${CALS[key].src}?masked`].map((src) => {
+          const f = Object.assign(document.createElement("iframe"), { src, tabIndex: -1, title: "Sample calendar week" });
+          f.setAttribute("scrolling", "no");
+          view.append(f);
+          return f;
+        });
+        fit();
+      }
+      return frames[key];
+    }
+
+    function render() {
+      framesFor(cal);
+      for (const [key, [plain, masked]] of Object.entries(frames)) {
+        plain.hidden = key !== cal || on;
+        masked.hidden = key !== cal || !on;
+      }
+      document.getElementById("url").textContent = CALS[cal].url;
+      sw.setAttribute("aria-pressed", on);
+      sw.lastChild.textContent = on ? "Blur on" : "Blur off";
+      ext.setAttribute("aria-pressed", on);
+      for (const t of document.querySelectorAll("[role=tab]")) t.setAttribute("aria-selected", t.dataset.cal === cal);
+    }
+
+    function fit() {
+      const s = view.clientWidth / 1280;
+      for (const f of view.querySelectorAll("iframe")) f.style.transform = `scale(${s})`;
+    }
+    new ResizeObserver(fit).observe(view);
+
+    sw.onclick = ext.onclick = () => { on = !on; render(); };
+    for (const t of document.querySelectorAll("[role=tab]")) t.onclick = () => { cal = t.dataset.cal; render(); };
+    render();
+  </script>
+</body>
+</html>

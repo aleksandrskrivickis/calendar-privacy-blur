@@ -1,0 +1,55 @@
+name: Deploy site
+run-name: Deploy site to GitHub Pages
+
+# Builds the project site (site/ plus the demo's mocks and the store images) and
+# deploys it to GitHub Pages. Main only: the images it shows are rendered on
+# the branch before it merges, so main already has the final ones.
+#
+# The repository's Pages source must be "GitHub Actions" (Settings → Pages).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "assets/**"
+      - "src/rules.js"
+      - "src/icons/**"
+      - "google*.html"
+      - "tools/build-site.mjs"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time. Never cancel one in progress; a newer push queues
+# behind it and replaces anything already waiting.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build the site
+        run: node tools/build-site.mjs
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
