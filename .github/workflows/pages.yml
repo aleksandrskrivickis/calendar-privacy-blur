@@ -14,7 +14,6 @@ on:
       - "assets/**"
       - "src/rules.js"
       - "src/icons/**"
-      - "google*.html"
       - "tools/build-site.mjs"
       - ".github/workflows/pages.yml"
   workflow_dispatch:

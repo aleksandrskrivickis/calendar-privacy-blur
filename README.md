@@ -100,12 +100,15 @@ node tools/bump-version.mjs --dry-run
 
 ### Publishing to the Chrome Web Store
 
-The last step of `release.yml` runs
+The `store` job of `release.yml` runs after the release is published. It
+downloads the release's zip and runs
 [`tools/publish-store.mjs`](tools/publish-store.mjs), which uses the
 [Chrome Web Store API](https://developer.chrome.com/docs/webstore/using-api) v2
 to upload the release zip to the existing listing and submit it for review. The
-update goes live once review approves it. Without credentials the step is
-skipped with a notice, and the release is still made.
+update goes live once review approves it. Without credentials the upload is
+skipped with a notice, and the release is still made. If the upload fails,
+"Re-run failed jobs" on the run retries just the upload, without another
+version bump.
 
 One-time setup:
 
@@ -166,8 +169,8 @@ locally:
 node tools/build-site.mjs && python3 -m http.server -d _site
 ```
 
-The `google*.html` file at the repo root is the Search Console verification
-for the site; the build copies it to the site root.
+`site/google*.html` is the Search Console verification for the site, so it
+has to stay at the site root.
 
 ### Icons
 

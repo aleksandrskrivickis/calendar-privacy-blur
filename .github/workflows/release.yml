@@ -4,9 +4,14 @@ name: Release
 # known until the bump step runs, so the title cannot carry it.
 run-name: ${{ github.event_name == 'workflow_dispatch' && 'Release (manual run)' || 'Release new version' }}
 
-# Bumps the version, commits it, publishes a release with the store zip and a
-# second zip of the listing's images and text, then uploads the store zip to
-# the Chrome Web Store and submits it for review.
+# Two jobs. `release` bumps the version, commits it, and publishes a GitHub
+# release with the store zip and a second zip of the listing's images and text.
+# `store` then uploads that release's zip to the Chrome Web Store and submits
+# it for review.
+#
+# Kept apart so a store failure (a submission still in review, expired
+# credentials) leaves the release in place, and "Re-run failed jobs" retries
+# only the upload: re-running `release` would bump the version again.
 #
 # Runs on main rather than in the pull request, which keeps it serialised: two
 # merges cannot produce the same version, so nothing has to guard against that.
@@ -26,15 +31,8 @@ jobs:
     # workflow runs anyway, so this is insurance against swapping in a PAT.
     if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
-
-    # Chrome Web Store credentials (see "Publishing to the Chrome Web Store" in
-    # the README). Without them the store step is skipped, not failed.
-    env:
-      CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
-      CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
-      CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
-      CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
-      CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID || 'epkaeencnloknpgpkajkjiiebllmhanb' }}
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -91,12 +89,39 @@ jobs:
             --target "$(git rev-parse HEAD)" \
             --generate-notes
 
-      # Last, so a store failure (a submission still in review, say) leaves the
-      # release in place. Do not re-run the job for it, that would bump again:
-      # run tools/publish-store.mjs on the release's zip, or upload it by hand.
+  store:
+    needs: release
+    runs-on: ubuntu-latest
+
+    # Chrome Web Store credentials (see "Publishing to the Chrome Web Store" in
+    # the README). Without them the upload is skipped with a notice, not failed.
+    env:
+      VERSION: ${{ needs.release.outputs.version }}
+      CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+      CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+      CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+      CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+      CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID || 'epkaeencnloknpgpkajkjiiebllmhanb' }}
+
+    steps:
+      # The release's own commit, so the publish script and the manifest it
+      # checks the version against match the zip.
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.release.outputs.version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # The exact file attached to the release, not a rebuild of it.
+      - name: Download the release's store zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "v$VERSION" --pattern "calendar-privacy-blur-$VERSION.zip" --dir dist
+
       - name: Publish to the Chrome Web Store
         if: ${{ env.CWS_REFRESH_TOKEN != '' && env.CWS_PUBLISHER_ID != '' }}
-        run: node tools/publish-store.mjs "dist/calendar-privacy-blur-${{ steps.bump.outputs.version }}.zip"
+        run: node tools/publish-store.mjs "dist/calendar-privacy-blur-$VERSION.zip"
 
       - name: Note a skipped store publish
         if: ${{ env.CWS_REFRESH_TOKEN == '' || env.CWS_PUBLISHER_ID == '' }}
