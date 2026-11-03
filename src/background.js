@@ -14,7 +14,6 @@ import {
   SCHEMA_VERSION,
   activePatterns,
   buildCss,
-  defaultSettings,
   getSettings,
   matchPatternToRegExp,
   mergeMissingBuiltins,
@@ -102,31 +101,61 @@ function enqueue(task) {
 /* -------------------------------------------------------------------------- */
 
 /**
- * The exact CSS currently injected in a tab, remembered so it can be removed
- * verbatim later. It lives in `chrome.storage.session` rather than a Map
- * because the worker can be torn down at any moment, and after a restart a
- * plain Map would have forgotten a stylesheet that is still on the page —
- * leaving no way to remove it if the rules have since changed.
+ * The exact CSS currently injected in a tab, and the document it went into,
+ * remembered so it can be removed verbatim later. It lives in storage rather
+ * than a Map because the worker can be torn down at any moment, and after a
+ * restart a plain Map would have forgotten a stylesheet that is still on the
+ * page — leaving no way to remove it if the rules have since changed.
+ *
+ * `chrome.storage.local`, not `.session`: an extension update clears session
+ * storage but leaves the old version's stylesheets on open pages, and only the
+ * record lets the new version take them off again. Records never outlive their
+ * pages in any way that matters, since one for a gone document is ignored, and
+ * onStartup clears them all.
+ *
+ * Injected CSS belongs to a document, not a tab: a navigation drops it. So the
+ * record names its document, and a record for any other document describes a
+ * page that is gone. Comparing document IDs is what tells a fresh page apart
+ * from one that already has the stylesheet. Guessing that from events instead
+ * (a tab update, a message from the page) let two signals for one page load
+ * each insert a copy, and removeCSS takes away one copy per call, so the blur
+ * could no longer be turned off until the page was reloaded.
  */
 const tabKey = (tabId) => `tabcss:${tabId}`;
 
-async function recordedCss(tabId) {
+/** `{ doc, css }`, or null when nothing is recorded for the tab. */
+async function recordFor(tabId) {
   const key = tabKey(tabId);
-  const stored = await chrome.storage.session.get(key);
-  return stored[key] ?? "";
+  const stored = await chrome.storage.local.get(key);
+  const record = stored[key];
+  return record && typeof record === "object" ? record : null;
+}
+
+/**
+ * The ID of the document in the tab's top frame right now. A no-op script is
+ * the one way to ask without the webNavigation permission; it runs in the
+ * extension's isolated world and touches nothing on the page.
+ */
+async function currentDocument(tabId) {
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => 0,
+    injectImmediately: true,
+  });
+  return result?.documentId;
 }
 
 async function forgetTab(tabId) {
   try {
-    await chrome.storage.session.remove(tabKey(tabId));
+    await chrome.storage.local.remove(tabKey(tabId));
   } catch {
-    // Session storage unavailable during teardown; nothing to do.
+    // Storage unavailable during teardown; nothing to do.
   }
 }
 
 /** Concatenated CSS of every enabled rule matching this URL. */
 function cssForUrl(s, url) {
-  if (s.blurEnabled === false) return "";
+  if (!s.blurEnabled) return "";
   return (s.rules ?? [])
     .filter((rule) => rule.enabled !== false && ruleMatchesUrl(rule, url))
     .map(buildCss)
@@ -138,16 +167,35 @@ function cssForUrl(s, url) {
  * Bring one tab in line. Swallows the expected failures — tab closed
  * mid-flight, navigated away, host permission not granted — so the page console
  * stays clean.
+ *
+ * `documentId` is passed when the caller already knows it (a message from the
+ * page carries it); otherwise it is looked up.
  */
-async function applyToTab(tabId, url) {
+async function applyToTab(tabId, url, documentId) {
   if (typeof tabId !== "number" || !url) return;
 
   const s = await settings();
   const wanted = cssForUrl(s, url);
-  const current = await recordedCss(tabId);
-  if (wanted === current) return;
+  const record = await recordFor(tabId);
+  if (!wanted && !record) return; // nothing to add or remove, so no lookup
 
-  const target = { tabId, allFrames: false };
+  let doc = documentId;
+  try {
+    doc ??= await currentDocument(tabId);
+  } catch {
+    return; // no access to this tab's page; nothing can be injected either
+  }
+  if (!doc) return;
+
+  const current = record?.doc === doc ? record.css : "";
+  if (wanted === current) {
+    if (record && record.doc !== doc) await forgetTab(tabId);
+    return;
+  }
+
+  // Aimed at that document only, so CSS can never land on a page that
+  // replaced it in the meantime without being recorded.
+  const target = { tabId, documentIds: [doc] };
   let inserted = false;
   let removed = false;
   try {
@@ -162,7 +210,7 @@ async function applyToTab(tabId, url) {
     }
     removed = true;
     if (wanted) {
-      await chrome.storage.session.set({ [tabKey(tabId)]: wanted });
+      await chrome.storage.local.set({ [tabKey(tabId)]: { doc, css: wanted } });
     } else {
       await forgetTab(tabId);
     }
@@ -186,7 +234,7 @@ async function applyToTab(tabId, url) {
 /** Bring every open tab in line with the current rules. */
 async function syncAllTabs() {
   const s = await settings();
-  await reflectState(s.blurEnabled !== false);
+  await reflectState(s.blurEnabled === true);
 
   let tabs = [];
   try {
@@ -280,9 +328,9 @@ chrome.runtime.onInstalled.addListener(() => {
     // to run alone. Everywhere else upgrades in memory only.
     const raw = await chrome.storage.local.get(null);
     if (!Array.isArray(raw.rules)) {
-      const seeded = defaultSettings();
-      seeded.blurEnabled = raw.blurEnabled !== false;
-      await saveSettings(seeded);
+      // A fresh install gets the defaults, masking off; a v1 install keeps its
+      // on/off choice. normalise() knows which is which.
+      await saveSettings(normalise(raw));
     } else if ((raw.schemaVersion ?? 0) < SCHEMA_VERSION) {
       // An install that predates a built-in service picks it up here, once.
       // Pass the stored version so only services introduced after it are added.
@@ -299,6 +347,9 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.runtime.onStartup.addListener(() => {
   enqueue(async () => {
+    // A new browser session: every page and tab ID from the last one is gone.
+    const all = await chrome.storage.local.get(null);
+    await chrome.storage.local.remove(Object.keys(all).filter((k) => k.startsWith("tabcss:")));
     invalidateCache();
     await syncDynamicContentScripts();
     await syncAllTabs();
@@ -340,8 +391,8 @@ chrome.permissions.onRemoved.addListener(() => {
  */
 chrome.action.onClicked.addListener(() => {
   enqueue(async () => {
-    const { blurEnabled } = await chrome.storage.local.get({ blurEnabled: true });
-    await chrome.storage.local.set({ blurEnabled: blurEnabled === false });
+    const { blurEnabled } = await chrome.storage.local.get({ blurEnabled: false });
+    await chrome.storage.local.set({ blurEnabled: blurEnabled !== true });
   });
 });
 
@@ -349,10 +400,8 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   const url = changeInfo.url ?? tab?.url;
   if (!maybeCovered(url)) return;
 
-  // A new document drops any previously injected CSS with it, so the record of
-  // what is on the page has to go too — otherwise the next reconcile sees
-  // "already correct" and leaves the fresh document unmasked.
-  if (changeInfo.status === "loading") enqueue(() => forgetTab(tabId));
+  // No need to forget anything on `loading`: the record names its document,
+  // so applyToTab sees for itself that a new page has nothing on it.
   if (!changeInfo.status && !changeInfo.url) return;
 
   // Acting on `loading` as well as `complete` closes the window in which titles
@@ -369,20 +418,15 @@ chrome.tabs.onRemoved.addListener((tabId) => {
  * covering what tabs.onUpdated misses: the extension being enabled while a tab
  * was already open, and SPA navigations that never surface as a tab update.
  *
- * The two are distinct because a fresh document arrives without the previously
- * injected CSS (the record has to be dropped), while a same-document route
- * change keeps it installed (the record has to be kept, so a no-longer-covered
- * route still gets its stale mask removed).
+ * Both are handled alike. The message names its document, and applyToTab
+ * compares that with the record, so a fresh document is recognised without
+ * being told and a route change keeps the record of the stylesheet it has.
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if ((message?.type === "cpb:document" || message?.type === "cpb:route") && sender.tab) {
-    const freshDocument = message.type === "cpb:document";
     const tabId = sender.tab.id;
     const url = sender.tab.url ?? sender.url;
-    enqueue(async () => {
-      if (freshDocument) await forgetTab(tabId);
-      await applyToTab(tabId, url);
-    });
+    enqueue(() => applyToTab(tabId, url, sender.documentId));
     return false;
   }
 

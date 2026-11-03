@@ -58,8 +58,11 @@ confirm the state at a glance before starting a screen share.
 - **No network requests.** The extension has no remote code, no analytics, no
   fetch/XHR of any kind. You can confirm this in DevTools → Network while
   toggling.
-- **No data collection.** The only things ever written are your on/off flag and
-  your list of services, in `chrome.storage.local`. Neither leaves the browser.
+- **No data collection.** The only things ever written are your on/off flag,
+  your list of services, and a note of which open tab holds which of the
+  extension's own stylesheets (tab and document IDs plus the CSS, cleared at
+  browser startup), all in `chrome.storage.local`. None of it leaves the
+  browser.
 - **No page reading.** The content script sends one message — "a calendar
   document is live here" — and never inspects or extracts page content.
 - **Permissions.** `storage` for settings, `scripting` to add and remove the
@@ -121,10 +124,17 @@ which is where the settings page lives.
 
 Stylesheets are generated from the rules rather than shipped as a static file, so
 there is one source of truth for the selectors. The exact CSS injected into each
-tab is recorded in `chrome.storage.session` — not a plain `Map` — because the
+tab is recorded in `chrome.storage.local` — not a plain `Map` — because the
 service worker can be torn down at any moment, and `removeCSS` will only remove a
 stylesheet if it is handed back the identical text. A forgotten string would mean
-a stale mask that nothing can lift.
+a stale mask that nothing can lift. Not `chrome.storage.session` either: an
+update clears that but leaves the old version's stylesheets on open pages.
+
+Each record also names the document the CSS went into. Injected CSS goes away
+with its document, so a record for a different document means a fresh page with
+nothing on it. Deciding that from events instead let one page load insert two
+copies, and as `removeCSS` takes off one copy per call, the blur then could not
+be turned off without reloading the page.
 
 The stylesheet is applied with `chrome.scripting.insertCSS` and removed with
 `removeCSS`, rather than being declared as a static `content_scripts.css` entry.

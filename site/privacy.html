@@ -35,9 +35,11 @@
       <ul>
         <li>Whether blur is on or off.</li>
         <li>Your list of calendars: which built-in ones are enabled, and any site and selector you add in settings.</li>
+        <li>While blur is on, a note of which open tab it put its stylesheet on, so it can take it off again. Only tab
+          and page IDs and the extension's own CSS; cleared when the browser restarts.</li>
       </ul>
-      <p>Both are kept in <code>chrome.storage.local</code> on your device. They are never sent anywhere, and removing the
-        extension deletes them.</p>
+      <p>All of it is kept in <code>chrome.storage.local</code> on your device. None of it is sent anywhere, and removing
+        the extension deletes it.</p>
 
       <h2>What it does not do</h2>
       <ul>
