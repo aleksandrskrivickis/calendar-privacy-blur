@@ -132,7 +132,8 @@ export const PRESETS = [
 ];
 
 /**
- * The shipped configuration: every built-in service on.
+ * The shipped configuration: every built-in service on, masking off until the
+ * user turns it on, so installing never changes a calendar out from under them.
  *
  * A service is built in when its selectors have been verified against the live
  * site *and* its hosts are declared in the manifest, so it works on install
@@ -142,7 +143,7 @@ export const PRESETS = [
 export function defaultSettings() {
   return {
     schemaVersion: SCHEMA_VERSION,
-    blurEnabled: true,
+    blurEnabled: false,
     rules: PRESETS.filter((p) => p.builtin).map((p) => ({
       ...structuredClone(p),
       enabled: true,
@@ -409,13 +410,14 @@ export async function getSettings() {
 export function normalise(raw) {
   const base = defaultSettings();
   if (!Array.isArray(raw?.rules)) {
-    // v1 stored only `blurEnabled`. Keep the user's on/off choice, adopt the
-    // new default rule set.
-    return { ...base, blurEnabled: raw?.blurEnabled !== false };
+    // A fresh install, read before onInstalled has seeded it, or v1, which
+    // stored only `blurEnabled`. Keep a stored on/off choice, adopt the
+    // default rule set.
+    return { ...base, blurEnabled: typeof raw?.blurEnabled === "boolean" ? raw.blurEnabled : base.blurEnabled };
   }
   return {
     schemaVersion: SCHEMA_VERSION,
-    blurEnabled: raw.blurEnabled !== false,
+    blurEnabled: raw.blurEnabled === true,
     rules: raw.rules.map((r) => ({
       id: r.id ?? crypto.randomUUID(),
       name: r.name ?? "Untitled service",
@@ -459,7 +461,7 @@ export function mergeMissingBuiltins(settings, storedSchemaVersion) {
 export async function saveSettings(settings) {
   await chrome.storage.local.set({
     schemaVersion: SCHEMA_VERSION,
-    blurEnabled: settings.blurEnabled !== false,
+    blurEnabled: settings.blurEnabled === true,
     rules: settings.rules,
   });
 }

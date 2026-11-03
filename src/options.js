@@ -366,7 +366,8 @@ async function resetAll() {
     "Reset all services to the shipped defaults?\n\nAny services you added and any selector edits will be lost.",
   );
   if (!ok) return;
-  model = defaultSettings();
+  // Resets the services only; the master switch stays where the user left it.
+  model = { ...defaultSettings(), blurEnabled: model.blurEnabled };
   el("master-toggle").checked = model.blurEnabled;
   render();
   await saveSettings(model);
@@ -383,7 +384,7 @@ async function init() {
   model = await getSettings();
 
   renderPresetPicker();
-  el("master-toggle").checked = model.blurEnabled !== false;
+  el("master-toggle").checked = model.blurEnabled === true;
   render();
 
   el("master-toggle").addEventListener("change", async (e) => {
@@ -401,7 +402,7 @@ async function init() {
   // Reflect a toggle made from the toolbar icon while this page is open.
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "local" && changes.blurEnabled) {
-      model.blurEnabled = changes.blurEnabled.newValue !== false;
+      model.blurEnabled = changes.blurEnabled.newValue === true;
       el("master-toggle").checked = model.blurEnabled;
     }
   });

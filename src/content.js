@@ -22,12 +22,12 @@ const sync = (type) => {
   chrome.runtime.sendMessage({ type }).catch(() => {});
 };
 
-// A fresh document starts with no injected CSS, so the worker must drop its
-// record of what it previously put on this tab.
+// A fresh document starts with no injected CSS. The message carries this
+// document's ID, which the worker compares with its record to see that.
 sync("cpb:document");
 
 // Same-document route changes keep whatever CSS is already installed; the
-// worker has to reconcile against its existing record, not forget it.
+// worker reconciles against its record for this document.
 const routeChanged = () => sync("cpb:route");
 
 if (window.navigation) {

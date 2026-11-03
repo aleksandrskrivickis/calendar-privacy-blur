@@ -7,7 +7,7 @@
  * what they use next to them at the same relative paths as in the repo, so the
  * demo's mocks still find ../../src/rules.js and run the shipped rules:
  *
- *   _site/              site/*, plus the Google site verification file
+ *   _site/              site/*, including the Search Console verification file
  *   _site/assets/       the calendar mocks, screenshots, promo tiles and icon
  *   _site/src/          rules.js and the icons, nothing else from the package
  *
@@ -18,7 +18,7 @@
  *   python3 -m http.server -d _site    # to look at it locally
  */
 
-import { cpSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { cpSync, mkdirSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,12 +43,4 @@ mkdirSync(OUT);
 for (const [from, to] of COPIES) {
   cpSync(join(ROOT, from), join(OUT, to), { recursive: true });
   console.log(`${from}  ->  _site/${to}`);
-}
-
-// Search Console proves ownership with a google<id>.html file at the site root.
-for (const f of readdirSync(ROOT)) {
-  if (/^google[0-9a-f]+\.html$/.test(f)) {
-    cpSync(join(ROOT, f), join(OUT, f));
-    console.log(`${f}  ->  _site/${f}`);
-  }
 }

@@ -7,10 +7,10 @@
 -->
 <meta charset="utf-8">
 <script type="module">
-  // Empty storage: getSettings() turns it into the shipped defaults.
+  // The shipped defaults with masking switched on, as the page looks in use.
   window.chrome = {
     storage: {
-      local: { get: async () => ({}), set: async () => {} },
+      local: { get: async () => ({ blurEnabled: true }), set: async () => {} },
       onChanged: { addListener() {} },
     },
     permissions: { contains: async () => true, request: async () => true },

@@ -29,7 +29,7 @@ With blur on, the text of every event turns into a soft smudge. Everything else 
 • Clicking, dragging and creating events work as normal.
 
 HOW IT WORKS
-Blur is on as soon as you install. Click the toolbar button to turn it off or on again; the change applies to every open calendar tab instantly, with no reload. An OFF badge on the button shows when titles are visible, so you can check before you start sharing.
+Nothing changes until you ask: blur starts off. Click the toolbar button to blur titles, and again to show them; the change applies to every open calendar tab instantly, with no reload, including tabs that were open before you installed. An OFF badge on the button shows when titles are visible, so you can check before you start sharing.
 
 WORKS WITH
 • Google Calendar
