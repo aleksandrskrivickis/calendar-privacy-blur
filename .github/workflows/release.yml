@@ -4,8 +4,9 @@ name: Release
 # known until the bump step runs, so the title cannot carry it.
 run-name: ${{ github.event_name == 'workflow_dispatch' && 'Release (manual run)' || 'Release new version' }}
 
-# Bumps the version, commits it, and publishes a release with the store zip and
-# a second zip of the listing's images and text.
+# Bumps the version, commits it, publishes a release with the store zip and a
+# second zip of the listing's images and text, then uploads the store zip to
+# the Chrome Web Store and submits it for review.
 #
 # Runs on main rather than in the pull request, which keeps it serialised: two
 # merges cannot produce the same version, so nothing has to guard against that.
@@ -25,6 +26,15 @@ jobs:
     # workflow runs anyway, so this is insurance against swapping in a PAT.
     if: ${{ !contains(github.event.head_commit.message, '[skip release]') }}
     runs-on: ubuntu-latest
+
+    # Chrome Web Store credentials (see "Publishing to the Chrome Web Store" in
+    # the README). Without them the store step is skipped, not failed.
+    env:
+      CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+      CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+      CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+      CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+      CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID || 'epkaeencnloknpgpkajkjiiebllmhanb' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -80,3 +90,14 @@ jobs:
             "dist/calendar-privacy-blur-${{ steps.bump.outputs.version }}-store-assets.zip" \
             --target "$(git rev-parse HEAD)" \
             --generate-notes
+
+      # Last, so a store failure (a submission still in review, say) leaves the
+      # release in place. Do not re-run the job for it, that would bump again:
+      # run tools/publish-store.mjs on the release's zip, or upload it by hand.
+      - name: Publish to the Chrome Web Store
+        if: ${{ env.CWS_REFRESH_TOKEN != '' && env.CWS_PUBLISHER_ID != '' }}
+        run: node tools/publish-store.mjs "dist/calendar-privacy-blur-${{ steps.bump.outputs.version }}.zip"
+
+      - name: Note a skipped store publish
+        if: ${{ env.CWS_REFRESH_TOKEN == '' || env.CWS_PUBLISHER_ID == '' }}
+        run: echo "::notice::Chrome Web Store credentials are not set; upload the release zip by hand."

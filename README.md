@@ -33,7 +33,7 @@ live demo and the [privacy policy](https://aleksandrskrivickis.github.io/calenda
 src/      the extension — load this folder unpacked
 assets/   Chrome Web Store images, rendered from mock calendars by CI
 site/     the GitHub Pages site: home page with a live demo, privacy policy
-tools/    icon generator, asset and site builders, the selector test fixture
+tools/    icon generator, asset and site builders, store publisher, selector fixture
 ```
 
 **→ [src/README.md](src/README.md)** for what it does, how to load it in
@@ -75,8 +75,9 @@ convention keep their names and don't count toward the sequence.
 One workflow, [`release.yml`](.github/workflows/release.yml). When a change
 lands on `main` that touches `src/`, it bumps the patch version in
 `src/manifest.json`, commits it, and publishes a release with two zips attached:
-the extension package to upload, and the store assets
-([`assets/LISTING.md`](assets/LISTING.md) with every image it shows).
+the extension package, and the store assets
+([`assets/LISTING.md`](assets/LISTING.md) with every image it shows). Then it
+uploads the package to the Chrome Web Store and submits it for review.
 
 Chrome refuses an upload that reuses a version, and `chrome://extensions` shows
 the version of an unpacked build — so a distinct version per shipped change makes
@@ -95,6 +96,50 @@ To preview a bump locally without changing anything:
 
 ```bash
 node tools/bump-version.mjs --dry-run
+```
+
+### Publishing to the Chrome Web Store
+
+The last step of `release.yml` runs
+[`tools/publish-store.mjs`](tools/publish-store.mjs), which uses the
+[Chrome Web Store API](https://developer.chrome.com/docs/webstore/using-api) v2
+to upload the release zip to the existing listing and submit it for review. The
+update goes live once review approves it. Without credentials the step is
+skipped with a notice, and the release is still made.
+
+One-time setup:
+
+1. In [Google Cloud](https://console.cloud.google.com/), create a project,
+   enable the **Chrome Web Store API**, set up the OAuth consent screen
+   (External, add yourself as a test user), and create an OAuth client of type
+   **Web application** with `https://developers.google.com/oauthplayground` as
+   a redirect URI.
+2. In the [OAuth Playground](https://developers.google.com/oauthplayground),
+   under the gear icon, tick "Use your own OAuth credentials" and enter the
+   client's ID and secret. Authorise the scope
+   `https://www.googleapis.com/auth/chromewebstore` with the account that owns
+   the listing, then exchange the code for tokens and copy the refresh token.
+   Publish the consent screen to production first if you can: a refresh token
+   issued while it is in testing expires after seven days.
+3. Add them to the repo, under Settings → Secrets and variables → Actions:
+
+   | Name | Kind | Value |
+   | --- | --- | --- |
+   | `CWS_CLIENT_ID` | secret | the OAuth client ID |
+   | `CWS_CLIENT_SECRET` | secret | the OAuth client secret |
+   | `CWS_REFRESH_TOKEN` | secret | the refresh token |
+   | `CWS_PUBLISHER_ID` | variable | Developer Dashboard → Publisher → Settings → Publisher ID |
+   | `CWS_EXTENSION_ID` | variable | optional; defaults to `epkaeencnloknpgpkajkjiiebllmhanb` |
+
+To check the listing's status, or to publish a release zip by hand with the same
+credentials in your environment:
+
+```bash
+node tools/publish-store.mjs --status
+```
+
+```bash
+node tools/publish-store.mjs dist/calendar-privacy-blur-<version>.zip
 ```
 
 ### Store assets
