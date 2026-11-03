@@ -109,26 +109,47 @@ function enqueue(task) {
  *
  * `chrome.storage.local`, not `.session`: an extension update clears session
  * storage but leaves the old version's stylesheets on open pages, and only the
- * record lets the new version take them off again. Records never outlive their
- * pages in any way that matters, since one for a gone document is ignored, and
- * onStartup clears them all.
+ * record lets the new version take them off again. Records are kept per document
+ * so a page restored from the back/forward cache can still be reconciled.
  *
  * Injected CSS belongs to a document, not a tab: a navigation drops it. So the
- * record names its document, and a record for any other document describes a
- * page that is gone. Comparing document IDs is what tells a fresh page apart
- * from one that already has the stylesheet. Guessing that from events instead
- * (a tab update, a message from the page) let two signals for one page load
- * each insert a copy, and removeCSS takes away one copy per call, so the blur
- * could no longer be turned off until the page was reloaded.
+ * record names its document. Comparing document IDs is what tells a fresh page
+ * apart from one that already has the stylesheet. Guessing that from events
+ * instead (a tab update, a message from the page) let two signals for one page
+ * load each insert a copy, and removeCSS takes away one copy per call, so the
+ * blur could no longer be turned off until the page was reloaded.
  */
 const tabKey = (tabId) => `tabcss:${tabId}`;
+const LEGACY_CSS_RECOVERY_KEY = "legacySessionCssRecoveryComplete";
 
-/** `{ doc, css }`, or null when nothing is recorded for the tab. */
-async function recordFor(tabId) {
+/** Returns the CSS records for each document in a tab. */
+async function recordsFor(tabId) {
   const key = tabKey(tabId);
   const stored = await chrome.storage.local.get(key);
   const record = stored[key];
-  return record && typeof record === "object" ? record : null;
+  if (record?.documents && typeof record.documents === "object") {
+    return { ...record.documents };
+  }
+  // Read records written by the preceding single-document format.
+  if (typeof record?.doc === "string" && typeof record.css === "string") {
+    return { [record.doc]: record.css };
+  }
+  return {};
+}
+
+async function saveDocumentRecord(tabId, doc, css) {
+  const records = await recordsFor(tabId);
+  if (css) {
+    records[doc] = css;
+  } else {
+    delete records[doc];
+  }
+  const key = tabKey(tabId);
+  if (Object.keys(records).length) {
+    await chrome.storage.local.set({ [key]: { documents: records } });
+  } else {
+    await chrome.storage.local.remove(key);
+  }
 }
 
 /**
@@ -176,8 +197,8 @@ async function applyToTab(tabId, url, documentId) {
 
   const s = await settings();
   const wanted = cssForUrl(s, url);
-  const record = await recordFor(tabId);
-  if (!wanted && !record) return; // nothing to add or remove, so no lookup
+  const records = await recordsFor(tabId);
+  if (!wanted && Object.keys(records).length === 0) return;
 
   let doc = documentId;
   try {
@@ -187,11 +208,8 @@ async function applyToTab(tabId, url, documentId) {
   }
   if (!doc) return;
 
-  const current = record?.doc === doc ? record.css : "";
-  if (wanted === current) {
-    if (record && record.doc !== doc) await forgetTab(tabId);
-    return;
-  }
+  const current = records[doc] ?? "";
+  if (wanted === current) return;
 
   // Aimed at that document only, so CSS can never land on a page that
   // replaced it in the meantime without being recorded.
@@ -210,9 +228,9 @@ async function applyToTab(tabId, url, documentId) {
     }
     removed = true;
     if (wanted) {
-      await chrome.storage.local.set({ [tabKey(tabId)]: { doc, css: wanted } });
+      await saveDocumentRecord(tabId, doc, wanted);
     } else {
-      await forgetTab(tabId);
+      await saveDocumentRecord(tabId, doc, "");
     }
   } catch {
     // Undo a successful insertion so the page matches whatever the record still
@@ -224,9 +242,15 @@ async function applyToTab(tabId, url, documentId) {
         // Tab gone or already clean; the record below stays authoritative.
       }
     }
-    // The old stylesheet is confirmed gone, so the record must not keep
-    // claiming it; otherwise keep it so removal can be retried later.
-    if (removed) await forgetTab(tabId);
+    // The old stylesheet is confirmed gone, so only its document record must
+    // be removed; other cached documents may still have their stylesheets.
+    if (removed && current) {
+      try {
+        await saveDocumentRecord(tabId, doc, "");
+      } catch {
+        // Keep the record if storage is unavailable so removal can be retried.
+      }
+    }
     // Re-fires on the next navigation, toggle or settings change.
   }
 }
@@ -245,6 +269,81 @@ async function syncAllTabs() {
     return;
   }
   await Promise.all(tabs.filter((t) => t.url).map((t) => applyToTab(t.id, t.url)));
+}
+
+/**
+ * Browser startup ends the lifetime of the previous session's documents. Keep
+ * records for the documents that are already live, including one reconciled
+ * before this handler ran, and discard records from the previous session.
+ */
+async function pruneStaleTabRecords() {
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({});
+  } catch {
+    return;
+  }
+
+  const liveDocuments = new Map();
+  await Promise.all(tabs.map(async (tab) => {
+    if (typeof tab.id !== "number" || !tab.url) return;
+    try {
+      const doc = await currentDocument(tab.id);
+      if (doc) liveDocuments.set(tab.id, doc);
+    } catch {
+      // The tab may not be accessible yet; its old record is stale.
+    }
+  }));
+
+  const all = await chrome.storage.local.get(null);
+  const updates = {};
+  const removals = [];
+  for (const [key, record] of Object.entries(all)) {
+    if (!key.startsWith("tabcss:")) continue;
+    const tabId = Number(key.slice("tabcss:".length));
+    const liveDoc = liveDocuments.get(tabId);
+    const records = record?.documents && typeof record.documents === "object"
+      ? record.documents
+      : typeof record?.doc === "string" && typeof record.css === "string"
+        ? { [record.doc]: record.css }
+        : {};
+    if (liveDoc && records[liveDoc]) {
+      updates[key] = { documents: { [liveDoc]: records[liveDoc] } };
+    } else {
+      removals.push(key);
+    }
+  }
+  if (Object.keys(updates).length) await chrome.storage.local.set(updates);
+  if (removals.length) await chrome.storage.local.remove(removals);
+}
+
+/** Reload matching open pages once to clear CSS injected before local records existed. */
+async function recoverLegacySessionCss(reason) {
+  const { [LEGACY_CSS_RECOVERY_KEY]: complete } =
+    await chrome.storage.local.get(LEGACY_CSS_RECOVERY_KEY);
+  if (complete) return;
+
+  if (reason === "update") {
+    const s = await settings();
+    if (s.blurEnabled) {
+      try {
+        const tabs = await chrome.tabs.query({});
+        await Promise.all(tabs
+          .filter((tab) => tab.id !== undefined && tab.url && cssForUrl(s, tab.url))
+          .map(async (tab) => {
+            try {
+              await chrome.tabs.reload(tab.id);
+            } catch {
+              // A tab can close while the recovery is running.
+            }
+          }));
+      } catch {
+        return;
+      }
+    }
+  }
+
+  await chrome.storage.local.set({ [LEGACY_CSS_RECOVERY_KEY]: true });
 }
 
 /**
@@ -322,7 +421,7 @@ async function syncDynamicContentScripts() {
 /* Wiring                                                                     */
 /* -------------------------------------------------------------------------- */
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
   enqueue(async () => {
     // Persist a migration exactly once, from the one context that is guaranteed
     // to run alone. Everywhere else upgrades in memory only.
@@ -340,6 +439,7 @@ chrome.runtime.onInstalled.addListener(() => {
       await saveSettings(merged ?? { ...normalised, schemaVersion: SCHEMA_VERSION });
     }
     invalidateCache();
+    await recoverLegacySessionCss(details.reason);
     await syncDynamicContentScripts();
     await syncAllTabs();
   });
@@ -347,9 +447,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
 chrome.runtime.onStartup.addListener(() => {
   enqueue(async () => {
-    // A new browser session: every page and tab ID from the last one is gone.
-    const all = await chrome.storage.local.get(null);
-    await chrome.storage.local.remove(Object.keys(all).filter((k) => k.startsWith("tabcss:")));
+    await pruneStaleTabRecords();
     invalidateCache();
     await syncDynamicContentScripts();
     await syncAllTabs();

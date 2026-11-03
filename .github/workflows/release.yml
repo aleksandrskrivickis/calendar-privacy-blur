@@ -120,9 +120,9 @@ jobs:
         run: gh release download "v$VERSION" --pattern "calendar-privacy-blur-$VERSION.zip" --dir dist
 
       - name: Publish to the Chrome Web Store
-        if: ${{ env.CWS_REFRESH_TOKEN != '' && env.CWS_PUBLISHER_ID != '' }}
+        if: ${{ env.CWS_CLIENT_ID != '' && env.CWS_CLIENT_SECRET != '' && env.CWS_REFRESH_TOKEN != '' && env.CWS_PUBLISHER_ID != '' }}
         run: node tools/publish-store.mjs "dist/calendar-privacy-blur-$VERSION.zip"
 
       - name: Note a skipped store publish
-        if: ${{ env.CWS_REFRESH_TOKEN == '' || env.CWS_PUBLISHER_ID == '' }}
+        if: ${{ env.CWS_CLIENT_ID == '' || env.CWS_CLIENT_SECRET == '' || env.CWS_REFRESH_TOKEN == '' || env.CWS_PUBLISHER_ID == '' }}
         run: echo "::notice::Chrome Web Store credentials are not set; upload the release zip by hand."

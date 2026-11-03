@@ -60,37 +60,61 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const item = () => `/publishers/${env("CWS_PUBLISHER_ID")}/items/${env("CWS_EXTENSION_ID")}`;
 
-const token = await accessToken();
-
-if (process.argv[2] === "--status") {
-  console.log(JSON.stringify(await call(token, "GET", `/v2${item()}:fetchStatus`), null, 2));
-  process.exit(0);
+function hasVersion(revision, version) {
+  return revision?.distributionChannels?.some((channel) => channel.crxVersion === version) ?? false;
 }
 
-const zip = process.argv[2];
-if (!zip) throw new Error("Usage: node tools/publish-store.mjs <package.zip>");
-const version = JSON.parse(readFileSync(new URL("../src/manifest.json", import.meta.url))).version;
+async function main() {
+  const token = await accessToken();
 
-console.log(`Uploading ${zip} (version ${version})…`);
-let upload = await call(token, "POST", `/upload/v2${item()}:upload`, readFileSync(zip), "application/zip");
-let state = upload.uploadState;
+  if (process.argv[2] === "--status") {
+    console.log(JSON.stringify(await call(token, "GET", `/v2${item()}:fetchStatus`), null, 2));
+    return;
+  }
 
-// Large packages are processed asynchronously; the status call reports when
-// that is done.
-for (let i = 0; i < 30 && /IN_PROGRESS/.test(state ?? ""); i++) {
-  await sleep(5000);
+  const zip = process.argv[2];
+  if (!zip) throw new Error("Usage: node tools/publish-store.mjs <package.zip>");
+  const version = JSON.parse(readFileSync(new URL("../src/manifest.json", import.meta.url))).version;
+
+  // A retry can follow a successful publish whose response was lost. Check both
+  // the submitted and published revisions before uploading the same version.
   const status = await call(token, "GET", `/v2${item()}:fetchStatus`);
-  state = status.lastAsyncUploadState ?? state;
-}
-console.log(`Upload state: ${state}${upload.crxVersion ? `, version ${upload.crxVersion}` : ""}`);
-if (!/SUCCEEDED/.test(state ?? "")) throw new Error(`Upload did not succeed:\n${JSON.stringify(upload, null, 2)}`);
-// The store refuses a version it already has, so this only trips on a
-// package built from something other than src/.
-if (upload.crxVersion && upload.crxVersion !== version) {
-  throw new Error(`Store read version ${upload.crxVersion}, manifest says ${version}.`);
+  if (hasVersion(status.submittedItemRevisionStatus, version)) {
+    const state = status.submittedItemRevisionStatus.state;
+    if (/REJECTED|CANCELLED/.test(state ?? "")) {
+      throw new Error(`Version ${version} was already submitted but is ${state}.`);
+    }
+    console.log(`Version ${version} is already submitted (${state ?? "submission in progress"}); skipping upload.`);
+    return;
+  }
+  if (hasVersion(status.publishedItemRevisionStatus, version)) {
+    console.log(`Version ${version} is already published; skipping upload.`);
+    return;
+  }
+
+  console.log(`Uploading ${zip} (version ${version})…`);
+  let upload = await call(token, "POST", `/upload/v2${item()}:upload`, readFileSync(zip), "application/zip");
+  let state = upload.uploadState;
+
+  // Large packages are processed asynchronously; the status call reports when
+  // that is done.
+  for (let i = 0; i < 30 && /IN_PROGRESS/.test(state ?? ""); i++) {
+    await sleep(5000);
+    const uploadStatus = await call(token, "GET", `/v2${item()}:fetchStatus`);
+    state = uploadStatus.lastAsyncUploadState ?? state;
+  }
+  console.log(`Upload state: ${state}${upload.crxVersion ? `, version ${upload.crxVersion}` : ""}`);
+  if (!/SUCCEEDED/.test(state ?? "")) throw new Error(`Upload did not succeed:\n${JSON.stringify(upload, null, 2)}`);
+  // The store refuses a version it already has, so this only trips on a
+  // package built from something other than src/.
+  if (upload.crxVersion && upload.crxVersion !== version) {
+    throw new Error(`Store read version ${upload.crxVersion}, manifest says ${version}.`);
+  }
+
+  console.log("Submitting for review…");
+  const published = await call(token, "POST", `/v2${item()}:publish`, JSON.stringify({ publishType: "DEFAULT_PUBLISH" }), "application/json");
+  console.log(`Submission state: ${published.state}`);
+  for (const w of published.warningInfo?.warnings ?? []) console.log(`::warning::${w.reason}: ${w.description}`);
 }
 
-console.log("Submitting for review…");
-const published = await call(token, "POST", `/v2${item()}:publish`, JSON.stringify({ publishType: "DEFAULT_PUBLISH" }), "application/json");
-console.log(`Submission state: ${published.state}`);
-for (const w of published.warningInfo?.warnings ?? []) console.log(`::warning::${w.reason}: ${w.description}`);
+await main();
